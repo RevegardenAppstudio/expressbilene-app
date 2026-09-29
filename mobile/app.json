@@ -1,17 +1,17 @@
 {
   "expo": {
-    "name": "Ekspressbilene",
-    "slug": "ekspressbilene",
+    "name": "Expressbilene",
+    "slug": "expressbilene",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "no.ekspressbilene.app"
+      "bundleIdentifier": "no.expressbilene.app"
     },
     "android": {
-      "package": "no.ekspressbilene.app",
+      "package": "no.expressbilene.app",
       "adaptiveIcon": {
         "backgroundColor": "#FFFFFF",
         "foregroundImage": "./assets/android-icon-foreground.png",

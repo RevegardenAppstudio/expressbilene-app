@@ -46,7 +46,7 @@ export default function GodtaVilkarForm({ userId, role }: { userId: string; role
   return (
     <div className="w-full max-w-sm">
       <div className="mb-8 text-center">
-        <Image src="/logo.png" alt="Ekspressbilene" width={2170} height={725} priority className="mx-auto h-12 w-auto sm:h-14" />
+        <Image src="/logo.png" alt="Expressbilene" width={2170} height={725} priority className="mx-auto h-12 w-auto sm:h-14" />
       </div>
 
       <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">

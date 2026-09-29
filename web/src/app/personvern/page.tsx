@@ -11,7 +11,7 @@ export default function PersonvernPage() {
           <section>
             <h2 className="text-base font-semibold text-slate-900">1. Behandlingsansvarlig</h2>
             <p className="mt-2">
-              Ekspressbilene (org.nr. 920 917 658), Stangnesterminalen 8 A, 9409 Harstad, er
+              Expressbilene (org.nr. 920 917 658), Stangnesterminalen 8 A, 9409 Harstad, er
               behandlingsansvarlig for personopplysningene som behandles i dette systemet og
               gjennom kontaktskjemaet på nettsiden. Du kan nå oss på telefon{" "}
               <a href="tel:41281000" className="text-brand-dark hover:brightness-90">
@@ -60,7 +60,7 @@ export default function PersonvernPage() {
             <p className="mt-2">
               Administratorer har tilgang til alle ansatte. Ledere med moderator-rolle har kun
               tilgang til ansatte i egen avdeling. Opplysningene deles ikke med uvedkommende utenfor
-              Ekspressbilene.
+              Expressbilene.
             </p>
           </section>
 

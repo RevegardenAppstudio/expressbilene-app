@@ -11,17 +11,17 @@ export default function VilkarPage() {
           <section>
             <h2 className="text-base font-semibold text-slate-900">1. Om systemet</h2>
             <p className="mt-2">
-              Dette systemet er et internt verktøy for Ekspressbilene, brukt av ansatte til å
+              Dette systemet er et internt verktøy for Expressbilene, brukt av ansatte til å
               registrere arbeidstid, fravær og kjøretøybruk, og av ledere/administratorer til å
               følge opp bemanning og kjøretøypark. Systemet er ikke en offentlig tjeneste, og
-              tilgang forutsetter en brukerkonto opprettet av Ekspressbilene.
+              tilgang forutsetter en brukerkonto opprettet av Expressbilene.
             </p>
           </section>
 
           <section>
             <h2 className="text-base font-semibold text-slate-900">2. Brukerkonto</h2>
             <p className="mt-2">
-              Brukerkontoen din opprettes av en administrator hos Ekspressbilene, og er personlig.
+              Brukerkontoen din opprettes av en administrator hos Expressbilene, og er personlig.
               Du er ansvarlig for å holde passordet ditt hemmelig og for aktivitet som skjer på din
               konto. Oppdager du at noen andre kan ha fått tilgang til kontoen din, må du bytte
               passord og varsle nærmeste leder umiddelbart.
@@ -42,7 +42,7 @@ export default function VilkarPage() {
           <section>
             <h2 className="text-base font-semibold text-slate-900">4. Tjenester (transport og bilutleie)</h2>
             <p className="mt-2">
-              Nettsiden gir generell informasjon om Ekspressbilenes tjenester innen budbil,
+              Nettsiden gir generell informasjon om Expressbilenes tjenester innen budbil,
               varetransport og varetaxi. Vi tar ikke imot bestillinger fra privatkunder. Konkrete
               transportoppdrag avtales direkte med kunden, og reguleres av egen avtale eller
               oppdragsbekreftelse, ikke av disse vilkårene.
@@ -52,8 +52,8 @@ export default function VilkarPage() {
           <section>
             <h2 className="text-base font-semibold text-slate-900">5. Ansvar</h2>
             <p className="mt-2">
-              Ekspressbilene tilstreber at systemet er tilgjengelig og fungerer som forventet, men
-              gir ingen garanti mot driftsavbrudd. Ekspressbilene er ikke ansvarlig for tap som
+              Expressbilene tilstreber at systemet er tilgjengelig og fungerer som forventet, men
+              gir ingen garanti mot driftsavbrudd. Expressbilene er ikke ansvarlig for tap som
               følge av feilregistreringer gjort av brukeren selv.
             </p>
           </section>
@@ -74,7 +74,7 @@ export default function VilkarPage() {
           <section>
             <h2 className="text-base font-semibold text-slate-900">8. Kontakt</h2>
             <p className="mt-2">
-              Spørsmål om vilkårene rettes til Ekspressbilene (org.nr. 920 917 658),
+              Spørsmål om vilkårene rettes til Expressbilene (org.nr. 920 917 658),
               Stangnesterminalen 8 A, 9409 Harstad, på telefon{" "}
               <a href="tel:41281000" className="text-brand-dark hover:brightness-90">
                 412 81 000

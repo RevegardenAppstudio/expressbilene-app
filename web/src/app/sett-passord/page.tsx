@@ -93,7 +93,7 @@ export default function SettPassordPage() {
     <div className="flex flex-1 items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <h1 className="text-2xl font-bold text-brand-dark">Ekspressbilene</h1>
+          <h1 className="text-2xl font-bold text-brand-dark">Expressbilene</h1>
           <p className="mt-1 text-sm text-slate-500">Sett passord</p>
         </div>
 

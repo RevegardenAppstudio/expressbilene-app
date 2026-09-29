@@ -1,7 +1,7 @@
-# Ekspressbilene
+# Expressbilene
 
 App for timeføring, fravær (sykdom/ferie/permisjon) og bemanning for
-Ekspressbilene. Består av to apper som deler samme Supabase-backend:
+Expressbilene. Består av to apper som deler samme Supabase-backend:
 
 - **`web/`** — Next.js-nettapp. Brukes av alle ansatte til timeføring og
   fravær, og av admin/sjef til å se oversikt, godkjenne fravær og
@@ -29,7 +29,7 @@ Ekspressbilene. Består av to apper som deler samme Supabase-backend:
 ## Kom i gang
 
 Databasen og Edge Functions er allerede satt opp i Supabase-prosjektet
-**Ekspressbilene** (`djjsinnboucpavbkdwrg`, eu-north-1).
+**Expressbilene** (`djjsinnboucpavbkdwrg`, eu-north-1).
 
 ### Nettapp
 

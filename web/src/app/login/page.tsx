@@ -64,7 +64,7 @@ export default function LoginPage() {
       <div className="flex flex-1 items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <Image src="/logo-white.png" alt="Ekspressbilene" width={2170} height={725} priority className="mx-auto h-12 w-auto sm:h-14" />
+          <Image src="/logo-white.png" alt="Expressbilene" width={2170} height={725} priority className="mx-auto h-12 w-auto sm:h-14" />
           <p className="mt-3 text-sm text-slate-200">Logg inn på Expressbilene intranett</p>
         </div>
 

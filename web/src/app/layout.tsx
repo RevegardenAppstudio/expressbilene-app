@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Ekspressbilene",
-  description: "Timeføring, fravær og bemanning for Ekspressbilene",
+  title: "Expressbilene",
+  description: "Timeføring, fravær og bemanning for Expressbilene",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

@@ -11,7 +11,7 @@ type ThemeContextValue = {
   toggleMode: () => void;
 };
 
-const STORAGE_KEY = "ekspressbilene:theme-mode";
+const STORAGE_KEY = "expressbilene:theme-mode";
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 

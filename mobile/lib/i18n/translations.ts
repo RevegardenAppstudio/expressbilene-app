@@ -225,7 +225,7 @@ const no = {
   login: {
     subtitle: "Logg inn på Expressbilene intranett",
     email: "E-post",
-    emailPlaceholder: "navn@ekspressbilene.no",
+    emailPlaceholder: "navn@expressbilene.no",
     password: "Passord",
     missingFieldsError: "Fyll ut e-post og passord.",
     invalidCredentialsError: "Feil e-post eller passord.",
@@ -496,7 +496,7 @@ const en: typeof no = {
   login: {
     subtitle: "Log in to the Expressbilene intranet",
     email: "Email",
-    emailPlaceholder: "name@ekspressbilene.no",
+    emailPlaceholder: "name@expressbilene.no",
     password: "Password",
     missingFieldsError: "Enter your email and password.",
     invalidCredentialsError: "Incorrect email or password.",

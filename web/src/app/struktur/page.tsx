@@ -28,7 +28,7 @@ export default function StrukturPage() {
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
           <Link href="/">
-            <Image src="/logo.png" alt="Ekspressbilene" width={2170} height={725} priority className="h-10 w-auto sm:h-12" />
+            <Image src="/logo.png" alt="Expressbilene" width={2170} height={725} priority className="h-10 w-auto sm:h-12" />
           </Link>
           <Link
             href="/login"

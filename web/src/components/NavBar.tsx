@@ -73,7 +73,7 @@ export default function NavBar({ profile }: { profile: Profile }) {
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <div className="flex items-center justify-between">
           <Link href="/">
-            <Image src="/logo.png" alt="Ekspressbilene" width={2170} height={725} priority className="h-10 w-auto sm:h-12" />
+            <Image src="/logo.png" alt="Expressbilene" width={2170} height={725} priority className="h-10 w-auto sm:h-12" />
           </Link>
           <span className="sm:hidden text-xs text-slate-500">{profile.full_name}</span>
         </div>

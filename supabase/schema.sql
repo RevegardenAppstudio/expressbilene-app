@@ -1,4 +1,4 @@
--- Ekspressbilene — Supabase-skjema (fullstendig, gjenspeiler deployet database)
+-- Expressbilene — Supabase-skjema (fullstendig, gjenspeiler deployet database)
 -- Kjør i Supabase Dashboard -> SQL Editor -> New query -> Run (mot et NYTT
 -- prosjekt).
 

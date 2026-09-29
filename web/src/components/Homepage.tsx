@@ -19,7 +19,7 @@ export default function Homepage({ appHref }: { appHref?: string }) {
     <div className="flex flex-1 flex-col">
       <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur">
         <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-2 px-4 py-3 sm:px-6">
-          <Image src="/logo.png" alt="Ekspressbilene" width={2170} height={725} priority className="h-10 w-auto sm:h-12" />
+          <Image src="/logo.png" alt="Expressbilene" width={2170} height={725} priority className="h-10 w-auto sm:h-12" />
           <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
             <LanguageSwitcher />
             <Link
