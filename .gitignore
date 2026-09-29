@@ -33,6 +33,9 @@ mobile/.kotlin/
 mobile/ios
 mobile/android
 
+# lokale notater (kun for meg, ikke del av prosjektet)
+/ideer.txt
+
 # misc
 .DS_Store
 *.pem
