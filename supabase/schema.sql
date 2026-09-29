@@ -943,4 +943,38 @@ $$;
 create extension if not exists pg_cron with schema extensions;
 select cron.schedule('delete-expired-deactivated-users', '0 3 * * *', $$select public.delete_expired_deactivated_users();$$);
 
+-- ============================================================
+-- 9. Innstramming av EXECUTE-rettigheter (Security Advisor-fiks)
+-- ============================================================
+-- Postgres gir EXECUTE til PUBLIC automatisk når en funksjon opprettes.
+-- Fjerner det og gjenoppretter kun det som faktisk trengs, ellers har
+-- "anon" (uinnlogget) direkte RPC-tilgang til security definer-funksjoner
+-- som ikke er ment å være offentlige.
+revoke execute on function public.can_manage_department(uuid) from public;
+revoke execute on function public.can_manage_user(uuid) from public;
+revoke execute on function public.is_admin() from public;
+revoke execute on function public.is_staff() from public;
+revoke execute on function public.vehicle_is_in_use(uuid) from public;
+revoke execute on function public.handle_new_user() from public;
+revoke execute on function public.notify_on_egenmelding_limit() from public;
+revoke execute on function public.notify_on_event() from public;
+revoke execute on function public.notify_on_sick_absence() from public;
+revoke execute on function public.notify_service_reminders() from public;
+revoke execute on function public.trigger_push_on_notification() from public;
+revoke execute on function public.prevent_sjafor_clock_in_edit() from public;
+
+-- Disse kalles direkte av innloggede brukere (RPC eller RLS-policyer).
+grant execute on function public.can_manage_department(uuid) to authenticated;
+grant execute on function public.can_manage_user(uuid) to authenticated;
+grant execute on function public.is_admin() to authenticated;
+grant execute on function public.is_staff() to authenticated;
+grant execute on function public.vehicle_is_in_use(uuid) to authenticated;
+
+-- handle_new_user, notify_on_*, notify_service_reminders,
+-- trigger_push_on_notification og prevent_sjafor_clock_in_edit er rene
+-- trigger-/cron-funksjoner -- ingen rolle trenger direkte EXECUTE, de kjører
+-- uavhengig av PostgREST-grants (triggere/cron krever ikke EXECUTE fra den
+-- utløsende rollen). is_first_time_setup() er bevisst åpen for anon (se
+-- egen kommentar der) og røres ikke.
+
 notify pgrst, 'reload schema';
