@@ -1,0 +1,32 @@
+
+admin skal ha pushvarsel 2 dager før service
+
+arbeidsuke kalender i app
+"innstilt" knapp i kalender
+"Fri" knapp i kalender
+bil er et krav for innklokking
+sperre helligdager + lørdag og søndag for timeregistrering 
+endre tekst "meld sykedag" "meld sykt barn"  manuell godkjenning
+"registrer egenmelding" "registrer sykt barn"
+Overtidstime registrering alt over 8 samme dato går i overtid.
+inntil 16dager sykemelding legges timer automatisk inn dersom sykemelding er over 16 dager stoppes time føring i perioden etter de 16 dagene
+fjerne ferie og permisjon fra sjåfør side, dette skal kun legges inn av admin
+registrere pause automatisk etter 4 timer ila en 8 timers arbeidsdag.
+reelt tidspunkt registreres og legges separat som "fakturerings grunnlag" men det må føres minst 8 timer timer jobbet 
+fakturerings grunnlag er faktiske timer, lønnsgrunnlag lønns timer registrert
+
+
+fjerne mulighet for å endre klokke inn tidspunktet for sjåfør
+fjerne mulighet for å legge inn Fra-til registrering sjåfør
+deaktiver knapp på brukere - slettes etter 1 år
+moderatorer skal ha mulighet å se det samme som admin men
+moderatorer skal ikke legge til biler, ansatte eller rute ikke redigere ansatte
+kun admin skal ha tilgang til ferie/permisjon og sykemeldinger.
+legge inn Sykdom(egenmelding)/Sykemelding/Sykt barn/Ferie/Permisjon/Verksted time ifra kalender oversikten med mulighet for å velge sluttdato
+aktiv status på totaloversikt på hvem som har klokket inn.
+
+
+PDF eksport pr ansatt av timer innenfor datoer valgt som viser: dato - Ansatt - avdeling - rute - bil - klokkeslett inn/ut - timer - pause til/fra - overtid - sykedager. 
+
+PDF eksport av totaloversikt timer sorteres pr avdeling og viser: dato - Ansatt - timer jobbet - fakturerings grunnlag - sykedager.  
+

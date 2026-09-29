@@ -1,0 +1,808 @@
+"use client";
+
+import { useEffect, useState, useCallback, useMemo } from "react";
+import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
+import { buildMonthGrid, monthLabels, weekdayLabels, toIsoDate } from "@/lib/calendar";
+import {
+  ABSENCE_TYPE_LABELS,
+  ADMIN_ONLY_ABSENCE_TYPES,
+  vehicleLabel,
+  type Absence,
+  type AbsenceType,
+  type Department,
+  type Profile,
+  type Route,
+  type RouteCancellation,
+  type TimeEntry,
+  type Vehicle,
+  type VehicleServiceBooking,
+} from "@/lib/types";
+import ReasonDialog from "@/components/ReasonDialog";
+import { useToast } from "@/components/Toast";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
+
+const TYPE_DOT: Record<string, string> = {
+  sykdom_egenmelding: "bg-amber-500",
+  sykdom_legemeldt: "bg-red-500",
+  sykt_barn: "bg-pink-500",
+  ferie: "bg-sky-500",
+  permisjon: "bg-purple-500",
+  fri: "bg-slate-400",
+};
+
+const SERVICE_DOT = "bg-orange-600";
+const CANCEL_DOT = "bg-rose-600";
+
+type AddMode = "fravaer" | "verksted" | "innstill" | null;
+
+export default function KalenderPage() {
+  const supabase = createClient();
+  const { showToast } = useToast();
+  const { language, t } = useLanguage();
+  const now = new Date();
+  const [year, setYear] = useState(now.getFullYear());
+  const [month, setMonth] = useState(now.getMonth());
+  const [absences, setAbsences] = useState<Absence[]>([]);
+  const [activeEntries, setActiveEntries] = useState<TimeEntry[]>([]);
+  const [profiles, setProfiles] = useState<Record<string, Profile>>({});
+  const [serviceBookings, setServiceBookings] = useState<VehicleServiceBooking[]>([]);
+  const [vehicles, setVehicles] = useState<Record<string, Vehicle>>({});
+  const [routes, setRoutes] = useState<Route[]>([]);
+  const [routeCancellations, setRouteCancellations] = useState<RouteCancellation[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [departmentFilter, setDepartmentFilter] = useState("");
+  const [isModerator, setIsModerator] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [hiddenTypes, setHiddenTypes] = useState<Set<string>>(new Set());
+  const [selectedDayIso, setSelectedDayIso] = useState<string | null>(null);
+
+  const [addMode, setAddMode] = useState<AddMode>(null);
+  const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [absenceEmployeeId, setAbsenceEmployeeId] = useState("");
+  const [absenceType, setAbsenceType] = useState<AbsenceType>("sykdom_egenmelding");
+  const [absenceEndDate, setAbsenceEndDate] = useState("");
+  const [absenceNote, setAbsenceNote] = useState("");
+  const [serviceVehicleId, setServiceVehicleId] = useState("");
+  const [serviceTime, setServiceTime] = useState("");
+  const [serviceNote, setServiceNote] = useState("");
+  const [cancelRouteId, setCancelRouteId] = useState("");
+  const [cancelNote, setCancelNote] = useState("");
+  const [pendingRemoveCancellationId, setPendingRemoveCancellationId] = useState<string | null>(null);
+
+  const grid = useMemo(() => buildMonthGrid(year, month), [year, month]);
+  const gridStart = toIsoDate(grid[0]);
+  const gridEnd = toIsoDate(grid[41]);
+
+  const loadActive = useCallback(async () => {
+    const { data } = await supabase.from("time_entries").select("*").not("clock_in", "is", null).is("clock_out", null);
+    if (data) setActiveEntries(data as TimeEntry[]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    const [
+      { data: absenceData },
+      { data: profileData },
+      { data: deps },
+      { data: vehicleData },
+      { data: bookingData },
+      { data: routeData },
+      { data: cancellationData },
+      meResult,
+    ] = await Promise.all([
+      supabase
+        .from("absences")
+        .select("*")
+        .lte("start_date", gridEnd)
+        .gte("end_date", gridStart)
+        .neq("status", "avslatt"),
+      supabase.from("profiles").select("*"),
+      supabase.from("departments").select("*").order("name"),
+      supabase.from("vehicles").select("*"),
+      supabase.from("vehicle_service_bookings").select("*").lte("service_date", gridEnd).gte("service_date", gridStart),
+      supabase.from("routes").select("*").order("name"),
+      supabase.from("route_cancellations").select("*").lte("cancellation_date", gridEnd).gte("cancellation_date", gridStart),
+      user ? supabase.from("profiles").select("role, department_id").eq("id", user.id).single() : Promise.resolve({ data: null }),
+    ]);
+
+    if (absenceData) setAbsences(absenceData as Absence[]);
+    if (profileData) {
+      const map: Record<string, Profile> = {};
+      for (const p of profileData as Profile[]) map[p.id] = p;
+      setProfiles(map);
+    }
+    if (deps) setDepartments(deps as Department[]);
+    if (vehicleData) {
+      const map: Record<string, Vehicle> = {};
+      for (const v of vehicleData as Vehicle[]) map[v.id] = v;
+      setVehicles(map);
+    }
+    if (bookingData) setServiceBookings(bookingData as VehicleServiceBooking[]);
+    if (routeData) setRoutes(routeData as Route[]);
+    if (cancellationData) setRouteCancellations(cancellationData as RouteCancellation[]);
+    if (meResult.data?.role === "moderator") setIsModerator(true);
+    if (meResult.data?.role === "admin") setIsAdmin(true);
+    await loadActive();
+    setLoading(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gridStart, gridEnd, loadActive]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  // "Aktive nå" oppdateres i sanntid via Supabase Realtime, ikke bare ved
+  // manuell refresh -- speiler samme oppsett som Kalender-skjermen i
+  // mobilappen.
+  useEffect(() => {
+    const channel = supabase
+      .channel("kalender-active-entries")
+      .on("postgres_changes", { event: "*", schema: "public", table: "time_entries" }, () => {
+        loadActive();
+      })
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loadActive]);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("eb_kalender_skjulte_typer");
+      if (saved) setHiddenTypes(new Set(JSON.parse(saved)));
+    } catch {
+      // Ignorerer -- kalenderen fungerer fint uten en husket preferanse.
+    }
+  }, []);
+
+  function toggleType(key: string) {
+    setHiddenTypes((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      try {
+        localStorage.setItem("eb_kalender_skjulte_typer", JSON.stringify([...next]));
+      } catch {
+        // Ignorerer -- ikke kritisk om preferansen ikke lar seg lagre.
+      }
+      return next;
+    });
+  }
+
+  function absencesForDay(iso: string) {
+    return absences.filter((a) => {
+      if (a.start_date > iso || a.end_date < iso) return false;
+      if (!departmentFilter) return true;
+      return profiles[a.user_id]?.department_id === departmentFilter;
+    });
+  }
+
+  function servicesForDay(iso: string) {
+    return serviceBookings.filter((b) => {
+      if (b.service_date !== iso) return false;
+      if (!departmentFilter) return true;
+      return vehicles[b.vehicle_id]?.department_id === departmentFilter;
+    });
+  }
+
+  const routeById = useMemo(() => {
+    const map: Record<string, Route> = {};
+    for (const r of routes) map[r.id] = r;
+    return map;
+  }, [routes]);
+
+  function cancellationsForDay(iso: string) {
+    return routeCancellations.filter((c) => {
+      if (c.cancellation_date !== iso) return false;
+      if (!departmentFilter) return true;
+      return routeById[c.route_id]?.department_id === departmentFilter;
+    });
+  }
+
+  const activeNow = activeEntries.filter((e) => {
+    if (!departmentFilter) return true;
+    return profiles[e.user_id]?.department_id === departmentFilter;
+  });
+
+  const isStaff = isAdmin || isModerator;
+  const routesForFilter = departmentFilter ? routes.filter((r) => r.department_id === departmentFilter) : routes;
+  const vehiclesForFilter = departmentFilter
+    ? Object.values(vehicles).filter((v) => v.department_id === departmentFilter)
+    : Object.values(vehicles);
+  const employeesForFilter = departmentFilter
+    ? Object.values(profiles).filter((p) => p.department_id === departmentFilter)
+    : Object.values(profiles);
+
+  function openDay(iso: string) {
+    setSelectedDayIso(iso);
+    setAddMode(null);
+    setFormError(null);
+    setAbsenceEmployeeId("");
+    setAbsenceType("sykdom_egenmelding");
+    setAbsenceEndDate(iso);
+    setAbsenceNote("");
+    setServiceVehicleId("");
+    setServiceTime("");
+    setServiceNote("");
+    setCancelRouteId("");
+    setCancelNote("");
+  }
+
+  async function handleAddAbsence() {
+    if (!selectedDayIso || !absenceEmployeeId) {
+      setFormError(t("kalender.selectEmployeeError"));
+      return;
+    }
+    if (absenceEndDate < selectedDayIso) {
+      setFormError(t("timer.toBeforeFromError"));
+      return;
+    }
+    setSaving(true);
+    setFormError(null);
+    const { data: inserted, error } = await supabase
+      .from("absences")
+      .insert({
+        user_id: absenceEmployeeId,
+        type: absenceType,
+        start_date: selectedDayIso,
+        end_date: absenceEndDate,
+        note: absenceNote.trim() || null,
+      })
+      .select("id, type")
+      .single();
+
+    if (error || !inserted) {
+      setSaving(false);
+      setFormError(t("kalender.addAbsenceFailed"));
+      showToast(t("kalender.addAbsenceFailed"), "error");
+      return;
+    }
+
+    // Ferie/permisjon/fri settes til "venter" av databasen -- siden en
+    // admin/moderator legger dette til direkte, godkjenner vi det med det
+    // samme (samme mønster som Sammendrag-siden).
+    if (inserted.type === "ferie" || inserted.type === "permisjon" || inserted.type === "fri") {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      await supabase
+        .from("absences")
+        .update({ status: "godkjent", decided_by: user?.id ?? null, decided_at: new Date().toISOString() })
+        .eq("id", inserted.id);
+    }
+
+    setSaving(false);
+    showToast(t("kalender.absenceAdded"));
+    setAddMode(null);
+    await load();
+  }
+
+  async function handleAddService() {
+    if (!selectedDayIso || !serviceVehicleId) {
+      setFormError(t("kalender.selectVehicleError"));
+      return;
+    }
+    setSaving(true);
+    setFormError(null);
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    const { error } = await supabase.from("vehicle_service_bookings").insert({
+      vehicle_id: serviceVehicleId,
+      service_date: selectedDayIso,
+      service_time: serviceTime || null,
+      note: serviceNote.trim() || null,
+      created_by: user?.id ?? null,
+    });
+    setSaving(false);
+    if (error) {
+      setFormError(t("kalender.addServiceFailed"));
+      showToast(t("kalender.addServiceFailed"), "error");
+      return;
+    }
+    showToast(t("kalender.serviceAdded"));
+    setAddMode(null);
+    await load();
+  }
+
+  async function handleAddCancellation() {
+    if (!selectedDayIso || !cancelRouteId) {
+      setFormError(t("kalender.selectRouteError"));
+      return;
+    }
+    setSaving(true);
+    setFormError(null);
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    const { error } = await supabase.from("route_cancellations").insert({
+      route_id: cancelRouteId,
+      cancellation_date: selectedDayIso,
+      note: cancelNote.trim() || null,
+      created_by: user?.id ?? null,
+    });
+    setSaving(false);
+    if (error) {
+      setFormError(t("kalender.addCancellationFailed"));
+      showToast(t("kalender.addCancellationFailed"), "error");
+      return;
+    }
+    showToast(t("kalender.cancellationAdded"));
+    setAddMode(null);
+    await load();
+  }
+
+  async function confirmRemoveCancellation() {
+    const id = pendingRemoveCancellationId;
+    setPendingRemoveCancellationId(null);
+    if (!id) return;
+    const { error } = await supabase.from("route_cancellations").delete().eq("id", id);
+    if (error) {
+      showToast(t("kalender.removeCancellationFailed"), "error");
+      return;
+    }
+    showToast(t("kalender.cancellationRemoved"));
+    await load();
+  }
+
+  function goToPrevMonth() {
+    if (month === 0) {
+      setYear((y) => y - 1);
+      setMonth(11);
+    } else {
+      setMonth((m) => m - 1);
+    }
+  }
+
+  function goToNextMonth() {
+    if (month === 11) {
+      setYear((y) => y + 1);
+      setMonth(0);
+    } else {
+      setMonth((m) => m + 1);
+    }
+  }
+
+  const todayIso = toIsoDate(now);
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-bold text-slate-900">{t("kalender.title")}</h1>
+          <p className="text-sm text-slate-500">{t("kalender.subtitle")}</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <select
+            value={departmentFilter}
+            onChange={(e) => setDepartmentFilter(e.target.value)}
+            className="rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+          >
+            <option value="">{t("kalender.allDepartments")}</option>
+            {departments.map((d) => (
+              <option key={d.id} value={d.id}>
+                {d.name}
+              </option>
+            ))}
+          </select>
+          <button
+            onClick={goToPrevMonth}
+            className="rounded-md border border-slate-300 px-2.5 py-1.5 text-sm text-slate-600 hover:bg-slate-100"
+          >
+            ←
+          </button>
+          <span className="w-36 text-center text-sm font-medium text-slate-700">
+            {monthLabels(language)[month]} {year}
+          </span>
+          <button
+            onClick={goToNextMonth}
+            className="rounded-md border border-slate-300 px-2.5 py-1.5 text-sm text-slate-600 hover:bg-slate-100"
+          >
+            →
+          </button>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap gap-2 text-xs">
+        <button
+          onClick={() => toggleType("active")}
+          className={`flex items-center gap-1.5 rounded-full border px-2 py-1 transition-colors ${
+            hiddenTypes.has("active") ? "border-slate-200 text-slate-400 opacity-50" : "border-slate-200 text-slate-600 hover:bg-slate-50"
+          }`}
+        >
+          <span className="h-2 w-2 rounded-full bg-green-500" />
+          {t("kalender.activeNow")}
+        </button>
+        {(Object.keys(ABSENCE_TYPE_LABELS) as (keyof typeof ABSENCE_TYPE_LABELS)[]).map((value) => (
+          <button
+            key={value}
+            onClick={() => toggleType(value)}
+            className={`flex items-center gap-1.5 rounded-full border px-2 py-1 transition-colors ${
+              hiddenTypes.has(value) ? "border-slate-200 text-slate-400 opacity-50" : "border-slate-200 text-slate-600 hover:bg-slate-50"
+            }`}
+          >
+            <span className={`h-2 w-2 rounded-full ${TYPE_DOT[value]}`} />
+            {t(`absenceType.${value}`)}
+          </button>
+        ))}
+        <button
+          onClick={() => toggleType("service")}
+          className={`flex items-center gap-1.5 rounded-full border px-2 py-1 transition-colors ${
+            hiddenTypes.has("service") ? "border-slate-200 text-slate-400 opacity-50" : "border-slate-200 text-slate-600 hover:bg-slate-50"
+          }`}
+        >
+          <span className={`h-2 w-2 rounded-full ${SERVICE_DOT}`} />
+          {t("kalender.service")}
+        </button>
+        <button
+          onClick={() => toggleType("cancellation")}
+          className={`flex items-center gap-1.5 rounded-full border px-2 py-1 transition-colors ${
+            hiddenTypes.has("cancellation") ? "border-slate-200 text-slate-400 opacity-50" : "border-slate-200 text-slate-600 hover:bg-slate-50"
+          }`}
+        >
+          <span className={`h-2 w-2 rounded-full ${CANCEL_DOT}`} />
+          {t("kalender.cancellation")}
+        </button>
+      </div>
+      <p className="-mt-2 text-xs text-slate-400">{t("kalender.toggleHint")}</p>
+
+      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div className="grid grid-cols-7 border-b border-slate-200 bg-slate-50 text-xs font-medium uppercase tracking-wide text-slate-500">
+          {weekdayLabels(language).map((d) => (
+            <div key={d} className="px-2 py-2 text-center">
+              {d}
+            </div>
+          ))}
+        </div>
+        <div className="grid grid-cols-7">
+          {grid.map((date) => {
+            const iso = toIsoDate(date);
+            const inMonth = date.getMonth() === month;
+            const dayAbsences = absencesForDay(iso);
+            const showActive = iso === todayIso && !hiddenTypes.has("active") ? activeNow : [];
+            const visibleAbsences = dayAbsences.filter((a) => !hiddenTypes.has(a.type));
+            const visibleServices = hiddenTypes.has("service") ? [] : servicesForDay(iso);
+            const visibleCancellations = hiddenTypes.has("cancellation") ? [] : cancellationsForDay(iso);
+            const hasContent =
+              showActive.length > 0 || visibleAbsences.length > 0 || visibleServices.length > 0 || visibleCancellations.length > 0;
+            const isClickable = hasContent || isStaff;
+            return (
+              <div
+                key={iso}
+                onClick={isClickable ? () => openDay(iso) : undefined}
+                className={`min-h-[92px] border-b border-r border-slate-100 p-1.5 last:border-r-0 ${
+                  inMonth ? "bg-white" : "bg-slate-50 text-slate-300"
+                } ${iso === todayIso ? "ring-1 ring-inset ring-brand" : ""} ${isClickable ? "cursor-pointer hover:bg-slate-50" : ""}`}
+              >
+                <div className="text-xs font-medium">{date.getDate()}</div>
+                <div className="mt-1 space-y-0.5">
+                  {showActive.slice(0, 3).map((e) => (
+                    <div
+                      key={`active-${e.id}`}
+                      title={t("kalender.clockedInTitle", { name: profiles[e.user_id]?.full_name ?? "?" })}
+                      className="flex items-center gap-1 truncate rounded bg-green-50 px-1 py-0.5 text-[10px] text-green-700"
+                    >
+                      <span className="h-1.5 w-1.5 shrink-0 animate-pulse rounded-full bg-green-500" />
+                      <span className="truncate">{profiles[e.user_id]?.full_name.split(" ")[0] ?? "?"}</span>
+                    </div>
+                  ))}
+                  {showActive.length > 3 && (
+                    <div className="text-[10px] text-green-600">{t("kalender.moreActive", { count: showActive.length - 3 })}</div>
+                  )}
+                  {visibleAbsences.slice(0, 3).map((a) => (
+                    <div
+                      key={a.id}
+                      title={`${profiles[a.user_id]?.full_name ?? "?"} — ${t(`absenceType.${a.type}`)}`}
+                      className="flex items-center gap-1 truncate rounded bg-slate-50 px-1 py-0.5 text-[10px] text-slate-600"
+                    >
+                      <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${TYPE_DOT[a.type]}`} />
+                      <span className="truncate">{profiles[a.user_id]?.full_name.split(" ")[0] ?? "?"}</span>
+                    </div>
+                  ))}
+                  {visibleAbsences.length > 3 && (
+                    <div className="text-[10px] text-slate-400">{t("kalender.more", { count: visibleAbsences.length - 3 })}</div>
+                  )}
+                  {visibleServices.slice(0, 3).map((b) => (
+                    <div
+                      key={b.id}
+                      title={`${vehicles[b.vehicle_id] ? vehicleLabel(vehicles[b.vehicle_id]) : "?"}${b.note ? ` — ${b.note}` : ""}`}
+                      className="flex items-center gap-1 truncate rounded bg-orange-50 px-1 py-0.5 text-[10px] text-orange-800"
+                    >
+                      <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${SERVICE_DOT}`} />
+                      <span className="truncate">{vehicles[b.vehicle_id] ? vehicleLabel(vehicles[b.vehicle_id]) : "?"}</span>
+                    </div>
+                  ))}
+                  {visibleServices.length > 3 && (
+                    <div className="text-[10px] text-orange-700">{t("kalender.moreService", { count: visibleServices.length - 3 })}</div>
+                  )}
+                  {visibleCancellations.slice(0, 3).map((c) => (
+                    <div
+                      key={c.id}
+                      title={`${routeById[c.route_id]?.name ?? "?"}${c.note ? ` — ${c.note}` : ""}`}
+                      className="flex items-center gap-1 truncate rounded bg-rose-50 px-1 py-0.5 text-[10px] text-rose-700"
+                    >
+                      <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${CANCEL_DOT}`} />
+                      <span className="truncate">{routeById[c.route_id]?.name ?? "?"}</span>
+                    </div>
+                  ))}
+                  {visibleCancellations.length > 3 && (
+                    <div className="text-[10px] text-rose-700">{t("kalender.moreCancellation", { count: visibleCancellations.length - 3 })}</div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {loading && <p className="text-sm text-slate-400">{t("common.loading")}</p>}
+
+      {selectedDayIso && (() => {
+        const dayDate = new Date(selectedDayIso + "T00:00:00");
+        const showActive = selectedDayIso === todayIso && !hiddenTypes.has("active") ? activeNow : [];
+        const visibleAbsences = absencesForDay(selectedDayIso).filter((a) => !hiddenTypes.has(a.type));
+        const visibleServices = hiddenTypes.has("service") ? [] : servicesForDay(selectedDayIso);
+        const visibleCancellations = hiddenTypes.has("cancellation") ? [] : cancellationsForDay(selectedDayIso);
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4" onClick={() => setSelectedDayIso(null)}>
+            <div className="max-h-[85vh] w-full max-w-sm overflow-y-auto rounded-xl bg-white p-5 shadow-lg" onClick={(e) => e.stopPropagation()}>
+              <div className="mb-4 flex items-center justify-between">
+                <h2 className="text-base font-semibold capitalize text-slate-900">
+                  {dayDate.toLocaleDateString(language === "en" ? "en-GB" : "nb-NO", { weekday: "long", day: "numeric", month: "long" })}
+                </h2>
+                <button onClick={() => setSelectedDayIso(null)} className="text-sm text-slate-400 hover:text-slate-600">
+                  {t("kalender.close")}
+                </button>
+              </div>
+
+              {showActive.length === 0 &&
+              visibleAbsences.length === 0 &&
+              visibleServices.length === 0 &&
+              visibleCancellations.length === 0 ? (
+                <p className="text-sm text-slate-400">{t("kalender.noEntriesForDay")}</p>
+              ) : (
+                <div className="space-y-3">
+                  {showActive.length > 0 && (
+                    <div>
+                      <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-slate-400">{t("kalender.activeNowHeading")}</p>
+                      <div className="space-y-1">
+                        {showActive.map((e) => (
+                          <div key={`active-${e.id}`} className="flex items-center gap-2 text-sm text-slate-700">
+                            <span className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-green-500" />
+                            {profiles[e.user_id]?.full_name ?? t("kalender.unknown")}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {visibleAbsences.length > 0 && (
+                    <div>
+                      <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-slate-400">{t("kalender.absenceHeading")}</p>
+                      <div className="space-y-1">
+                        {visibleAbsences.map((a) => (
+                          <div key={a.id} className="flex items-center gap-2 text-sm text-slate-700">
+                            <span className={`h-2 w-2 shrink-0 rounded-full ${TYPE_DOT[a.type]}`} />
+                            {profiles[a.user_id]?.full_name ?? t("kalender.unknown")}
+                            <span className="text-slate-400">— {t(`absenceType.${a.type}`)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {visibleServices.length > 0 && (
+                    <div>
+                      <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-slate-400">{t("kalender.serviceHeading")}</p>
+                      <div className="space-y-1">
+                        {visibleServices.map((b) => (
+                          <div key={b.id} className="flex items-center gap-2 text-sm text-slate-700">
+                            <span className={`h-2 w-2 shrink-0 rounded-full ${SERVICE_DOT}`} />
+                            <Link href={`/bil/${b.vehicle_id}`} className="hover:text-brand-dark hover:underline">
+                              {vehicles[b.vehicle_id] ? vehicleLabel(vehicles[b.vehicle_id]) : t("kalender.unknown")}
+                            </Link>
+                            {b.note && <span className="text-slate-400">— {b.note}</span>}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {visibleCancellations.length > 0 && (
+                    <div>
+                      <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-slate-400">{t("kalender.cancellationHeading")}</p>
+                      <div className="space-y-1">
+                        {visibleCancellations.map((c) => (
+                          <div key={c.id} className="flex items-center gap-2 text-sm text-slate-700">
+                            <span className={`h-2 w-2 shrink-0 rounded-full ${CANCEL_DOT}`} />
+                            {routeById[c.route_id]?.name ?? t("kalender.unknown")}
+                            {c.note && <span className="text-slate-400">— {c.note}</span>}
+                            {isStaff && (
+                              <button
+                                onClick={() => setPendingRemoveCancellationId(c.id)}
+                                className="ml-auto text-xs text-slate-400 hover:text-red-600"
+                              >
+                                {t("common.delete")}
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {isStaff && (
+                <div className="mt-4 space-y-3 border-t border-slate-100 pt-4">
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={() => setAddMode(addMode === "fravaer" ? null : "fravaer")}
+                      className="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100"
+                    >
+                      {t("kalender.showAddAbsence")}
+                    </button>
+                    <button
+                      onClick={() => setAddMode(addMode === "verksted" ? null : "verksted")}
+                      className="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100"
+                    >
+                      {t("kalender.showAddService")}
+                    </button>
+                    <button
+                      onClick={() => setAddMode(addMode === "innstill" ? null : "innstill")}
+                      className="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100"
+                    >
+                      {t("kalender.showAddCancellation")}
+                    </button>
+                  </div>
+
+                  {addMode === "fravaer" && (
+                    <div className="space-y-2 rounded-lg bg-slate-50 p-3">
+                      <select
+                        value={absenceEmployeeId}
+                        onChange={(e) => setAbsenceEmployeeId(e.target.value)}
+                        className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+                      >
+                        <option value="">{t("common.noneSelected")}</option>
+                        {employeesForFilter
+                          .sort((a, b) => a.full_name.localeCompare(b.full_name))
+                          .map((p) => (
+                            <option key={p.id} value={p.id}>
+                              {p.full_name}
+                            </option>
+                          ))}
+                      </select>
+                      <select
+                        value={absenceType}
+                        onChange={(e) => setAbsenceType(e.target.value as AbsenceType)}
+                        className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+                      >
+                        {(Object.keys(ABSENCE_TYPE_LABELS) as AbsenceType[])
+                          .filter((value) => isAdmin || !ADMIN_ONLY_ABSENCE_TYPES.includes(value))
+                          .map((value) => (
+                            <option key={value} value={value}>
+                              {t(`absenceType.${value}`)}
+                            </option>
+                          ))}
+                      </select>
+                      <div className="flex items-center gap-2">
+                        <label className="text-xs text-slate-500">{t("kalender.toDate")}</label>
+                        <input
+                          type="date"
+                          min={selectedDayIso}
+                          value={absenceEndDate}
+                          onChange={(e) => setAbsenceEndDate(e.target.value)}
+                          className="flex-1 rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+                        />
+                      </div>
+                      <input
+                        type="text"
+                        value={absenceNote}
+                        onChange={(e) => setAbsenceNote(e.target.value)}
+                        placeholder={t("sammendrag.noteOptional")}
+                        className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+                      />
+                      <button
+                        onClick={handleAddAbsence}
+                        disabled={saving}
+                        className="w-full rounded-md bg-brand px-3 py-1.5 text-sm font-semibold text-black hover:brightness-90 disabled:opacity-60"
+                      >
+                        {saving ? t("common.saving") : t("kalender.add")}
+                      </button>
+                    </div>
+                  )}
+
+                  {addMode === "verksted" && (
+                    <div className="space-y-2 rounded-lg bg-slate-50 p-3">
+                      <select
+                        value={serviceVehicleId}
+                        onChange={(e) => setServiceVehicleId(e.target.value)}
+                        className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+                      >
+                        <option value="">{t("common.noneSelected")}</option>
+                        {vehiclesForFilter.map((v) => (
+                          <option key={v.id} value={v.id}>
+                            {vehicleLabel(v)}
+                          </option>
+                        ))}
+                      </select>
+                      <input
+                        type="time"
+                        value={serviceTime}
+                        onChange={(e) => setServiceTime(e.target.value)}
+                        className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+                      />
+                      <input
+                        type="text"
+                        value={serviceNote}
+                        onChange={(e) => setServiceNote(e.target.value)}
+                        placeholder={t("sammendrag.noteOptional")}
+                        className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+                      />
+                      <button
+                        onClick={handleAddService}
+                        disabled={saving}
+                        className="w-full rounded-md bg-brand px-3 py-1.5 text-sm font-semibold text-black hover:brightness-90 disabled:opacity-60"
+                      >
+                        {saving ? t("common.saving") : t("kalender.add")}
+                      </button>
+                    </div>
+                  )}
+
+                  {addMode === "innstill" && (
+                    <div className="space-y-2 rounded-lg bg-slate-50 p-3">
+                      <select
+                        value={cancelRouteId}
+                        onChange={(e) => setCancelRouteId(e.target.value)}
+                        className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+                      >
+                        <option value="">{t("common.noneSelected")}</option>
+                        {routesForFilter.map((r) => (
+                          <option key={r.id} value={r.id}>
+                            {r.name}
+                          </option>
+                        ))}
+                      </select>
+                      <input
+                        type="text"
+                        value={cancelNote}
+                        onChange={(e) => setCancelNote(e.target.value)}
+                        placeholder={t("sammendrag.noteOptional")}
+                        className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+                      />
+                      <button
+                        onClick={handleAddCancellation}
+                        disabled={saving}
+                        className="w-full rounded-md bg-brand px-3 py-1.5 text-sm font-semibold text-black hover:brightness-90 disabled:opacity-60"
+                      >
+                        {saving ? t("common.saving") : t("kalender.add")}
+                      </button>
+                    </div>
+                  )}
+
+                  {formError && <p className="text-xs text-red-600">{formError}</p>}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
+
+      {pendingRemoveCancellationId && (
+        <ReasonDialog
+          title={t("kalender.removeCancellationTitle")}
+          confirmLabel={t("common.delete")}
+          danger
+          onConfirm={confirmRemoveCancellation}
+          onCancel={() => setPendingRemoveCancellationId(null)}
+        />
+      )}
+    </div>
+  );
+}

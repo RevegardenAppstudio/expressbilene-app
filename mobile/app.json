@@ -1,0 +1,36 @@
+{
+  "expo": {
+    "name": "Ekspressbilene",
+    "slug": "ekspressbilene",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "no.ekspressbilene.app"
+    },
+    "android": {
+      "package": "no.ekspressbilene.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#FFFFFF",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "@react-native-community/datetimepicker"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "472bd3df-1fe6-41c3-a6b0-0a54d24b2efe"
+      }
+    },
+    "owner": "bjarnemedjarne"
+  }
+}
