@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import ContactForm from "@/components/ContactForm";
 import Footer from "@/components/Footer";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
@@ -106,16 +107,19 @@ export default function Homepage({ appHref }: { appHref?: string }) {
       </section>
 
       <section id="kontakt" className="mx-auto w-full max-w-6xl px-4 py-16 sm:px-6">
-        <div className="max-w-lg">
-          <h2 className="text-2xl font-bold text-slate-900 sm:text-3xl">{t("home.contactTitle")}</h2>
-          <p className="mt-4 text-sm leading-relaxed text-slate-600">{t("home.contactText")}</p>
-          <a
-            href="tel:41281000"
-            className="mt-6 block text-2xl font-bold text-brand-dark hover:brightness-90"
-          >
-            412 81 000
-          </a>
-          <p className="mt-1 text-sm text-slate-500">{t("home.contactHours")}</p>
+        <div className="grid grid-cols-1 gap-10 md:grid-cols-2">
+          <div>
+            <h2 className="text-2xl font-bold text-slate-900 sm:text-3xl">{t("home.contactTitle")}</h2>
+            <p className="mt-4 text-sm leading-relaxed text-slate-600">{t("home.contactText")}</p>
+            <a
+              href="tel:41281000"
+              className="mt-6 block text-2xl font-bold text-brand-dark hover:brightness-90"
+            >
+              412 81 000
+            </a>
+            <p className="mt-1 text-sm text-slate-500">{t("home.contactHours")}</p>
+          </div>
+          <ContactForm />
         </div>
       </section>
 
