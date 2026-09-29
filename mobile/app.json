@@ -1,13 +1,13 @@
 {
   "expo": {
     "name": "Expressbilene",
-    "slug": "expressbilene",
+    "slug": "ekspressbilene",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "supportsTablet": true,
+      "supportsTablet": false,
       "bundleIdentifier": "no.expressbilene.app"
     },
     "android": {
