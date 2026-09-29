@@ -2,18 +2,43 @@
 
 import { useState, FormEvent } from "react";
 
-const CONTACT_EMAIL = "post@expressbilene.no";
+type Status = "idle" | "sending" | "sent" | "error";
 
 export default function ContactForm() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
+  const [status, setStatus] = useState<Status>("idle");
+  const [errorMessage, setErrorMessage] = useState("");
 
-  function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    const subject = `Henvendelse fra ${name || "nettsiden"}`;
-    const body = `${message}\n\n—\n${name}\n${email}`;
-    window.location.href = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    setStatus("sending");
+    setErrorMessage("");
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, message }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "Kunne ikke sende meldingen.");
+      setStatus("sent");
+      setName("");
+      setEmail("");
+      setMessage("");
+    } catch (err) {
+      setStatus("error");
+      setErrorMessage(err instanceof Error ? err.message : "Kunne ikke sende meldingen.");
+    }
+  }
+
+  if (status === "sent") {
+    return (
+      <div className="flex items-center rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <p className="text-sm text-slate-600">Takk for henvendelsen! Vi svarer så snart som mulig.</p>
+      </div>
+    );
   }
 
   return (
@@ -57,11 +82,13 @@ export default function ContactForm() {
           className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand"
         />
       </div>
+      {status === "error" && <p className="text-sm text-red-600">{errorMessage}</p>}
       <button
         type="submit"
-        className="w-full rounded-md bg-brand px-4 py-2 text-sm font-semibold text-black transition-colors hover:brightness-90"
+        disabled={status === "sending"}
+        className="w-full rounded-md bg-brand px-4 py-2 text-sm font-semibold text-black transition-colors hover:brightness-90 disabled:cursor-not-allowed disabled:opacity-60"
       >
-        Send henvendelse
+        {status === "sending" ? "Sender…" : "Send henvendelse"}
       </button>
     </form>
   );
