@@ -977,4 +977,93 @@ grant execute on function public.vehicle_is_in_use(uuid) to authenticated;
 -- utløsende rollen). is_first_time_setup() er bevisst åpen for anon (se
 -- egen kommentar der) og røres ikke.
 
+-- ============================================================
+-- 10. Performance Advisor-fiks: indekser og RLS-initplan
+-- ============================================================
+-- Manglende indekser på foreign keys.
+create index if not exists idx_absences_decided_by on public.absences (decided_by);
+create index if not exists idx_audit_log_actor_id on public.audit_log (actor_id);
+create index if not exists idx_events_department_id on public.events (department_id);
+create index if not exists idx_events_resolved_by on public.events (resolved_by);
+create index if not exists idx_events_vehicle_id on public.events (vehicle_id);
+create index if not exists idx_notifications_archived_by on public.notifications (archived_by);
+create index if not exists idx_notifications_created_by on public.notifications (created_by);
+create index if not exists idx_profiles_department_id on public.profiles (department_id);
+create index if not exists idx_route_cancellations_created_by on public.route_cancellations (created_by);
+create index if not exists idx_time_entries_department_id on public.time_entries (department_id);
+create index if not exists idx_time_entries_route_id on public.time_entries (route_id);
+create index if not exists idx_vehicle_service_bookings_created_by on public.vehicle_service_bookings (created_by);
+
+-- RLS-policyer som re-evaluerte auth.uid() per rad i stedet for én gang per
+-- query. Bytter auth.uid() -> (select auth.uid()) som Supabase anbefaler --
+-- ingen endring i faktisk tilgang, kun query-plan.
+alter policy "Bruker kan endre eget navn" on public.profiles
+  using ((select auth.uid()) = id);
+
+alter policy "Bruker kan lese egne push-tokens" on public.push_tokens
+  using ((select auth.uid()) = user_id);
+alter policy "Bruker kan registrere egen push-token" on public.push_tokens
+  with check ((select auth.uid()) = user_id);
+alter policy "Bruker kan slette egen push-token" on public.push_tokens
+  using ((select auth.uid()) = user_id);
+alter policy "Bruker kan oppdatere egen push-token" on public.push_tokens
+  using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
+
+alter policy "Bruker kan opprette egne hendelser" on public.events
+  with check ((select auth.uid()) = user_id);
+alter policy "Egne hendelser, stab i avdeling, eller samme avdeling som bilen" on public.events
+  using (
+    ((select auth.uid()) = user_id)
+    or can_manage_user(user_id)
+    or (exists (
+      select 1 from vehicles v join profiles me on (me.id = (select auth.uid()))
+      where v.id = events.vehicle_id and v.department_id is not null and v.department_id = me.department_id
+    ))
+  );
+
+alter policy "Alle kan logge egne handlinger" on public.audit_log
+  with check ((select auth.uid()) = actor_id);
+
+alter policy "Egne registreringer eller stab ser alle" on public.time_entries
+  using (((select auth.uid()) = user_id) or can_manage_user(user_id));
+alter policy "Sjafor endrer egne innen 3 dager, stab uansett avdeling" on public.time_entries
+  using ((((select auth.uid()) = user_id) and (entry_date >= (current_date - interval '3 days'))) or can_manage_user(user_id));
+alter policy "Sjafor sletter egne innen 3 dager, stab uansett avdeling" on public.time_entries
+  using ((((select auth.uid()) = user_id) and (entry_date >= (current_date - interval '3 days'))) or can_manage_user(user_id));
+alter policy "Sjafor klokker inn i dag (virkedag, bil+rute), stab uansett avd" on public.time_entries
+  with check (
+    (((select auth.uid()) = user_id) and (entry_date = current_date) and (clock_out is null) and (vehicle_id is not null) and (route_id is not null) and is_business_day(entry_date))
+    or can_manage_user(user_id)
+  );
+
+alter policy "Fravaer: egenmelding/sykt barn selv/stab, ferie/permisjon/sykem" on public.absences
+  with check (
+    case when absence_type_requires_admin(type) then is_admin()
+    else (((select auth.uid()) = user_id) or can_manage_user(user_id)) end
+  );
+alter policy "Egne soknader alltid, ferie/permisjon/sykemelding kun admin for" on public.absences
+  using (
+    ((select auth.uid()) = user_id)
+    or case when absence_type_requires_admin(type) then is_admin() else can_manage_user(user_id) end
+  );
+alter policy "Sjafor endrer egen ventende sokand, ferie/permisjon/sykemelding" on public.absences
+  using (
+    (((select auth.uid()) = user_id) and (status = 'venter'::absence_status))
+    or case when absence_type_requires_admin(type) then is_admin() else can_manage_user(user_id) end
+  );
+alter policy "Sjafor sletter egen ventende sokand, ferie/permisjon/sykemeldin" on public.absences
+  using (
+    (((select auth.uid()) = user_id) and (status = 'venter'::absence_status))
+    or case when absence_type_requires_admin(type) then is_admin() else can_manage_user(user_id) end
+  );
+
+alter policy "Bruker styrer egne push-preferanser" on public.push_notification_preferences
+  using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
+
+-- NB: "multiple_permissive_policies"-varselet for departments/routes/
+-- vehicles/vehicle_service_bookings (admin-policy + felles leseregel som
+-- begge dekker SELECT) er bevisst latt være -- tabellene er sma, og fiksen
+-- krever å dele admin-policyen i tre separate (insert/update/delete) siden
+-- Postgres ikke stotter kommadelte kommandoer i én policy.
+
 notify pgrst, 'reload schema';
