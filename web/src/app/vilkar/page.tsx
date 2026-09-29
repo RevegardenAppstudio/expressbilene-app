@@ -5,7 +5,7 @@ export default function VilkarPage() {
     <div className="flex flex-1 justify-center px-4 py-12">
       <div className="w-full max-w-3xl rounded-xl border border-slate-200 bg-white p-6 shadow-sm sm:p-10">
         <h1 className="text-2xl font-bold text-slate-900">Vilkår for bruk</h1>
-        <p className="mt-2 text-xs text-slate-400">Sist oppdatert: 27. september 2026</p>
+        <p className="mt-2 text-xs text-slate-400">Sist oppdatert: 29. september 2026</p>
 
         <div className="mt-6 space-y-6 text-sm leading-relaxed text-slate-600">
           <section>
@@ -33,9 +33,9 @@ export default function VilkarPage() {
             <p className="mt-2">
               Systemet skal kun brukes til arbeidsrelaterte formål: registrering av egen arbeidstid,
               fravær og kjøretøybruk, samt oppfølging av dette der du har en lederrolle. Du er
-              ansvarlig for at opplysningene du registrerer er korrekte. Ledere og administratorer
-              kan rette eller supplere registreringer for ansatte i egen avdeling — slike endringer
-              logges.
+              ansvarlig for at opplysningene du registrerer er korrekte. Ledere med moderator-rolle
+              og administratorer kan rette eller supplere registreringer for ansatte på tvers av
+              alle avdelinger — slike endringer logges.
             </p>
           </section>
 

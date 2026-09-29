@@ -5,7 +5,7 @@ export default function PersonvernPage() {
     <div className="flex flex-1 justify-center px-4 py-12">
       <div className="w-full max-w-3xl rounded-xl border border-slate-200 bg-white p-6 shadow-sm sm:p-10">
         <h1 className="text-2xl font-bold text-slate-900">Personvernerklæring</h1>
-        <p className="mt-2 text-xs text-slate-400">Sist oppdatert: 27. september 2026</p>
+        <p className="mt-2 text-xs text-slate-400">Sist oppdatert: 29. september 2026</p>
 
         <div className="mt-6 space-y-6 text-sm leading-relaxed text-slate-600">
           <section>
@@ -58,9 +58,8 @@ export default function PersonvernPage() {
           <section>
             <h2 className="text-base font-semibold text-slate-900">4. Hvem har tilgang</h2>
             <p className="mt-2">
-              Administratorer har tilgang til alle ansatte. Ledere med moderator-rolle har kun
-              tilgang til ansatte i egen avdeling. Opplysningene deles ikke med uvedkommende utenfor
-              Expressbilene.
+              Administratorer og ledere med moderator-rolle har tilgang til alle ansatte, på tvers
+              av avdelinger. Opplysningene deles ikke med uvedkommende utenfor Expressbilene.
             </p>
           </section>
 
