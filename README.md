@@ -17,14 +17,21 @@ Expressbilene. Består av to apper som deler samme Supabase-backend:
   ansatt kan kun opprette/endre sine egne timer og fraværssøknader,
   og kan ikke gi seg selv admin-rolle. Dette gjelder uansett hva klienten
   gjør, så det kan ikke omgås fra appen.
-- **Roller**: `ansatt` og `admin`, lagret i `profiles.role`. Den aller
-  første brukeren som opprettes (via `/oppsett` i nettappen) blir automatisk
-  admin. Alle senere ansatte legges til av en admin via invitasjon.
-- **Brukeradministrasjon** skjer via tre Supabase Edge Functions
+- **Roller**: `sjafor` (vanlig ansatt), `moderator` og `admin`, lagret i
+  `profiles.role`. Moderator har samme tilgang som admin til å administrere
+  ansatte, ruter og biler, og til å godkjenne fravær — på tvers av alle
+  avdelinger, ikke bare egen. Kun admin kan invitere/redigere/slette
+  brukere, deaktivere kontoer og se endringsloggen. Den aller første
+  brukeren som opprettes (via `/oppsett` i nettappen) blir automatisk admin.
+  Alle senere ansatte legges til av en admin via invitasjon.
+- **Brukeradministrasjon** skjer via Supabase Edge Functions
   (`supabase/functions/`) som bruker secret key server-side:
   - `invite-user` — admin inviterer en ny ansatt på e-post
-  - `admin-list-users` — admin ser status (aktiv/invitert) på alle ansatte
+  - `admin-list-users` — admin/moderator ser status (aktiv/invitert) på alle ansatte
+  - `admin-update-user` — admin endrer navn/rolle/avdeling på en ansatt
   - `admin-delete-user` — admin fjerner en ansattkonto
+  - `notify-staff-push` — sender push-varsel til admin/moderator på mobil
+    (filtrert på den enkeltes varslingsinnstillinger, se `/innstillinger`)
 
 ## Kom i gang
 
@@ -74,9 +81,14 @@ I [Supabase Dashboard](https://supabase.com/dashboard/project/djjsinnboucpavbkdw
 
 ## Neste steg (ikke bygget ennå)
 
-- Push-varsler i mobilappen (f.eks. påminnelse om å føre timer, eller varsel
-  når en fraværssøknad blir godkjent/avslått)
-- Eksport av timelister (CSV/PDF) for lønnskjøring
-- Redigering av egne timeregistreringer (i dag: kun opprette/slette)
-- Produksjonsutrulling av nettappen (Vercel e.l.) og app store-publisering
-  av mobilappen (EAS Build — se `npx eas build`)
+- App store-publisering av mobilappen — EAS-prosjektet er satt opp
+  (`mobile/app.json`), men det er ikke laget/sendt inn noen produksjonsbuild
+  ennå (se `npx eas build`). Frem til da brukes appen via Expo Go.
+- Egen SMTP i Supabase (se punktet under) og eventuelt eget
+  produksjonsdomene for nettappen — kjører p.t. på Vercels standarddomene.
+- CSV-eksport av timelister (PDF-eksport for lønnskjøring finnes allerede,
+  se `web/src/lib/reports.ts`).
+
+Allerede bygget siden forrige gang denne lista ble skrevet: push-varsler i
+mobilappen (med av/på-brytere per varslingstype), redigering av egne
+timeregistreringer, og produksjonsutrulling av nettappen på Vercel.
