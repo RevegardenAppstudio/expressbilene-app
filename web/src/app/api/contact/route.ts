@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Resend } from "resend";
+import nodemailer from "nodemailer";
 
 const CONTACT_EMAIL = "post@expressbilene.no";
 
@@ -19,17 +19,24 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "For lang tekst i et av feltene." }, { status: 400 });
   }
 
-  const resend = new Resend(process.env.RESEND_API_KEY);
+  const transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: Number(process.env.SMTP_PORT ?? 587),
+    secure: process.env.SMTP_PORT === "465",
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASSWORD,
+    },
+  });
 
   try {
-    const { error } = await resend.emails.send({
-      from: "Expressbilene nettside <kontakt@expressbilene.no>",
+    await transporter.sendMail({
+      from: `"Expressbilene nettside" <${process.env.SMTP_USER}>`,
       to: CONTACT_EMAIL,
       replyTo: email,
       subject: `Henvendelse fra ${name}`,
       text: `${message}\n\n—\n${name}\n${email}`,
     });
-    if (error) throw error;
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error("Kunne ikke sende kontaktskjema-e-post:", error);
