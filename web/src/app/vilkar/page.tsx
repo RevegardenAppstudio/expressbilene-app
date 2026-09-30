@@ -1,11 +1,12 @@
 "use client";
 
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { LanguageProvider, useLanguage } from "@/lib/i18n/LanguageContext";
 
 function VilkarContent() {
   const { t } = useLanguage();
+  const router = useRouter();
 
   return (
     <div className="flex flex-1 justify-center px-4 py-12">
@@ -64,9 +65,13 @@ function VilkarContent() {
           </section>
         </div>
 
-        <Link href="/login" className="mt-8 inline-block text-sm font-medium text-brand-dark hover:text-brand-dark">
-          {t("vilkar.backToLogin")}
-        </Link>
+        <button
+          type="button"
+          onClick={() => router.back()}
+          className="mt-8 inline-block text-sm font-medium text-brand-dark hover:text-brand-dark"
+        >
+          {t("vilkar.back")}
+        </button>
       </div>
     </div>
   );

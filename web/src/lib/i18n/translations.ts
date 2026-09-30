@@ -509,7 +509,7 @@ const no = {
     s8Title: "8. Sikkerhet",
     s8Body:
       "All trafikk til systemet er kryptert (HTTPS), og tilgang til opplysninger er rollestyrt slik at hver bruker kun ser det som er relevant for egen rolle og avdeling.",
-    backToLogin: "Tilbake til innlogging",
+    back: "← Tilbake",
   },
   vilkar: {
     title: "Vilkår for bruk",
@@ -538,7 +538,7 @@ const no = {
     s8Before:
       "Spørsmål om vilkårene rettes til Expressbilene (org.nr. 920 917 658), Stangnesterminalen 8 A, 9409 Harstad, på telefon",
     s8After: ".",
-    backToLogin: "Tilbake til innlogging",
+    back: "← Tilbake",
   },
   login: {
     homeLink: "← Hjemmeside",
@@ -1061,7 +1061,7 @@ const en: typeof no = {
     s8Title: "8. Security",
     s8Body:
       "All traffic to the system is encrypted (HTTPS), and access to data is role-based so that each user only sees what is relevant to their own role and department.",
-    backToLogin: "Back to login",
+    back: "← Back",
   },
   vilkar: {
     title: "Terms of Use",
@@ -1090,7 +1090,7 @@ const en: typeof no = {
     s8Before:
       "Questions about these terms should be directed to Expressbilene (org. no. 920 917 658), Stangnesterminalen 8 A, 9409 Harstad, Norway, by phone at",
     s8After: ".",
-    backToLogin: "Back to login",
+    back: "← Back",
   },
   login: {
     homeLink: "← Homepage",
