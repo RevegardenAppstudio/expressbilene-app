@@ -258,7 +258,7 @@ const no = {
       "Kjører du varene dine selv? Varetaxi er en tidsbesparende løsning som gjør at du kan konsentrere deg om din egen virksomhet. Dette er et raskt og rimelig transportalternativ, enten du skal frakte små eller store varer.",
     aboutTitle: "Kort om oss",
     aboutP1:
-      "Expressbilene ble etablert i 2012 og har allerede på den korte tiden rukket å bli et stort selskap med tungvektere på kundelisten. Kundene våre består av samlastere, distribusjonsselskaper, budfirmaer, speditører og lignende.",
+      "Expressbilene ble etablert i 2012 og har siden da rukket å bli et stort selskap med tungvektere på kundelisten. Kundene våre består av samlastere, distribusjonsselskaper, budfirmaer, speditører og lignende.",
     aboutP2:
       "Expressbilene tilbyr tjenester innenfor transport og bilutleie, og har kjøretøy stasjonert i hele Norge, slik at vi kan levere god og rask kundeservice landet rundt.",
     aboutP3:
@@ -810,7 +810,7 @@ const en: typeof no = {
       "Driving the goods yourself? A cargo taxi is a time-saving solution that lets you focus on your own business. It's a fast and affordable transport option, whether you're moving small or large goods.",
     aboutTitle: "About us",
     aboutP1:
-      "Expressbilene was established in 2012 and has, in that short time, grown into a large company with heavyweight clients on its books. Our customers include consolidators, distribution companies, courier firms, freight forwarders and similar businesses.",
+      "Expressbilene was established in 2012 and has since then grown into a large company with heavyweight clients on its books. Our customers include consolidators, distribution companies, courier firms, freight forwarders and similar businesses.",
     aboutP2:
       "Expressbilene offers services within transport and vehicle rental, with vehicles stationed across Norway so we can deliver good, fast customer service nationwide.",
     aboutP3:
