@@ -355,7 +355,15 @@ export default function AvdelingerPage() {
 
     setInviting(false);
     if (error) {
-      const msg = t("avdelinger.inviteFailed");
+      let msg = t("avdelinger.inviteFailed");
+      if ("context" in error && error.context instanceof Response) {
+        try {
+          const body = await error.context.json();
+          if (body?.error) msg = body.error;
+        } catch {
+          // Svaret var ikke JSON -- bruker den generiske meldingen.
+        }
+      }
       setError(msg);
       showToast(msg, "error");
       return;
