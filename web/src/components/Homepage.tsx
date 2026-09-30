@@ -34,7 +34,7 @@ export default function Homepage({ appHref }: { appHref?: string }) {
 
       <section className="relative flex min-h-[480px] items-center overflow-hidden sm:min-h-[560px]">
         <div className="absolute inset-0 -z-10 bg-slate-900">
-          <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: "url(/bakgrunn4.avif)" }} />
+          <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: "url(/fleet-hero.avif)" }} />
           <div className="absolute inset-0 bg-black/60" />
         </div>
 
@@ -55,7 +55,7 @@ export default function Homepage({ appHref }: { appHref?: string }) {
         <div className="mx-auto grid w-full max-w-6xl grid-cols-1 items-center gap-10 px-4 py-16 sm:px-6 md:grid-cols-2">
           <div
             className="aspect-[4/3] rounded-xl bg-cover bg-center shadow-sm"
-            style={{ backgroundImage: "url(/bakgrunn3.avif)" }}
+            style={{ backgroundImage: "url(/fleet-lineup.avif)" }}
           />
           <div>
             <h2 className="text-2xl font-bold text-slate-900 sm:text-3xl">{t("home.aboutTitle")}</h2>
