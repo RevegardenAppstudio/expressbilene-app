@@ -243,33 +243,10 @@ const no = {
   home: {
     login: "Logg inn",
     goToApp: "Intranett",
-    heroTagline: "Spesialist på bydistribusjon, distriktsruter og ekspressleveringer — med kjøretøy stasjonert i hele Norge.",
-    contactUs: "Kontakt oss",
-    servicesTitle: "Våre tjenester",
-    budbilerTitle: "Budbiler",
-    budbilerText:
-      "Budbil er det beste alternativet når du vil være fullstendig trygg på at leveransen kommer frem i tide. Varen går direkte fra avsender til mottaker, og du kan holde kontinuerlig kontakt med sjåføren underveis. Vi sender budbiler i hele Norge, uavhengig av størrelsen på lasten.",
-    varetransportTitle: "Varetransport",
-    varetransportText:
-      "Vi tilpasser bil etter kundens behov — enten det er utfordringer med høyder, antall pallplasser, thermo eller varme i skap. Sammen finner vi en løsning.",
-    varetaxiTitle: "Varetaxi",
-    varetaxiText:
-      "Kjører du varene dine selv? Varetaxi er en tidsbesparende løsning som gjør at du kan konsentrere deg om din egen virksomhet. Dette er et raskt og rimelig transportalternativ, enten du skal frakte små eller store varer.",
     aboutTitle: "Kort om oss",
     aboutP1:
       "Expressbilene ble etablert i 2012 og har siden da rukket å bli et stort selskap med tungvektere på kundelisten. Kundene våre består av samlastere, distribusjonsselskaper, budfirmaer, speditører og lignende.",
-    aboutP2:
-      "Expressbilene tilbyr tjenester innenfor transport og bilutleie, og har kjøretøy stasjonert i hele Norge, slik at vi kan levere god og rask kundeservice landet rundt.",
-    aboutP3:
-      "Skal vi beskrive oss med et par setninger, vil det ikke bli feil å si at vi er spesialist på bydistribusjon, distriktsruter og ekspressleveringer.",
-    establishedLabel: "Etablert",
-    vehiclesLabel: "Kjøretøy på veiene",
-    nationwide: "Hele Norge",
-    nationwideLabel: "Landsdekkende drift",
     contactTitle: "Kontakt oss",
-    contactText:
-      "Kundene våre består av samlastere, distribusjonsselskaper, budfirmaer, speditører og lignende. Vi kjører ikke på bestilling fra privatkunder.",
-    contactHours: "Hele døgnet, året rundt",
   },
   avdelinger: {
     title: "Avdelinger",
@@ -794,33 +771,10 @@ const en: typeof no = {
   home: {
     login: "Log in",
     goToApp: "Intranet",
-    heroTagline: "Specialists in urban distribution, regional routes and express deliveries — with vehicles stationed across Norway.",
-    contactUs: "Contact us",
-    servicesTitle: "Our services",
-    budbilerTitle: "Courier vehicles",
-    budbilerText:
-      "A courier vehicle is the best option when you want to be fully confident the delivery arrives on time. The goods go directly from sender to recipient, and you can stay in continuous contact with the driver along the way. We send courier vehicles all over Norway, regardless of load size.",
-    varetransportTitle: "Freight transport",
-    varetransportText:
-      "We tailor the vehicle to the customer's needs — whether it's height restrictions, number of pallet spaces, thermo, or heated cargo space. Together we'll find a solution.",
-    varetaxiTitle: "Cargo taxi",
-    varetaxiText:
-      "Driving the goods yourself? A cargo taxi is a time-saving solution that lets you focus on your own business. It's a fast and affordable transport option, whether you're moving small or large goods.",
     aboutTitle: "About us",
     aboutP1:
       "Expressbilene was established in 2012 and has since then grown into a large company with heavyweight clients on its books. Our customers include consolidators, distribution companies, courier firms, freight forwarders and similar businesses.",
-    aboutP2:
-      "Expressbilene offers services within transport and vehicle rental, with vehicles stationed across Norway so we can deliver good, fast customer service nationwide.",
-    aboutP3:
-      "If we were to describe ourselves in a couple of sentences, it wouldn't be wrong to say we specialise in urban distribution, regional routes and express deliveries.",
-    establishedLabel: "Established",
-    vehiclesLabel: "Vehicles on the road",
-    nationwide: "All of Norway",
-    nationwideLabel: "Nationwide operations",
     contactTitle: "Contact us",
-    contactText:
-      "Our customers include consolidators, distribution companies, courier firms, freight forwarders and similar businesses. We don't take orders from private customers.",
-    contactHours: "Around the clock, all year round",
   },
   avdelinger: {
     title: "Departments",

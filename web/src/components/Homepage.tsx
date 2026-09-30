@@ -26,22 +26,10 @@ export default function Homepage({ appHref }: { appHref?: string }) {
         </div>
       </header>
 
-      <section className="relative flex min-h-[480px] items-center overflow-hidden sm:min-h-[560px]">
+      <section className="relative flex min-h-[320px] items-center overflow-hidden sm:min-h-[400px]">
         <div className="absolute inset-0 -z-10 bg-slate-900">
           <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: "url(/fleet-hero.avif)" }} />
           <div className="absolute inset-0 bg-black/60" />
-        </div>
-
-        <div className="mx-auto w-full max-w-6xl px-4 py-16 sm:px-6">
-          <p className="max-w-xl text-lg text-slate-200 sm:text-xl">{t("home.heroTagline")}</p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <a
-              href="#kontakt"
-              className="rounded-md bg-brand px-5 py-2.5 text-sm font-semibold text-black transition-colors hover:brightness-90"
-            >
-              {t("home.contactUs")}
-            </a>
-          </div>
         </div>
       </section>
 
@@ -54,25 +42,21 @@ export default function Homepage({ appHref }: { appHref?: string }) {
           <div>
             <h2 className="text-2xl font-bold text-slate-900 sm:text-3xl">{t("home.aboutTitle")}</h2>
             <p className="mt-4 text-sm leading-relaxed text-slate-600">{t("home.aboutP1")}</p>
-          </div>
-        </div>
-      </section>
 
-      <section id="kontakt" className="mx-auto w-full max-w-6xl px-4 py-16 sm:px-6">
-        <div className="max-w-lg">
-          <h2 className="text-2xl font-bold text-slate-900 sm:text-3xl">{t("home.contactTitle")}</h2>
-          <a
-            href="tel:41281000"
-            className="mt-6 block text-2xl font-bold text-brand-dark hover:brightness-90"
-          >
-            412 81 000
-          </a>
-          <a
-            href="mailto:post@expressbilene.no"
-            className="mt-4 block text-lg font-semibold text-brand-dark hover:brightness-90"
-          >
-            post@expressbilene.no
-          </a>
+            <h2 id="kontakt" className="mt-10 text-2xl font-bold text-slate-900 sm:text-3xl">{t("home.contactTitle")}</h2>
+            <a
+              href="tel:41281000"
+              className="mt-6 block text-2xl font-bold text-brand-dark hover:brightness-90"
+            >
+              412 81 000
+            </a>
+            <a
+              href="mailto:post@expressbilene.no"
+              className="mt-4 block text-lg font-semibold text-brand-dark hover:brightness-90"
+            >
+              post@expressbilene.no
+            </a>
+          </div>
         </div>
       </section>
 
