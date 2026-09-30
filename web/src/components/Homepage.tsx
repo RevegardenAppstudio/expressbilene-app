@@ -9,12 +9,6 @@ import { useLanguage } from "@/lib/i18n/LanguageContext";
 export default function Homepage({ appHref }: { appHref?: string }) {
   const { t } = useLanguage();
 
-  const SERVICES = [
-    { title: t("home.budbilerTitle"), text: t("home.budbilerText"), image: "/bakgrunn2.avif" },
-    { title: t("home.varetransportTitle"), text: t("home.varetransportText"), image: "/bakgrunn1.avif" },
-    { title: t("home.varetaxiTitle"), text: t("home.varetaxiText"), image: "/bakgrunn5.avif" },
-  ];
-
   return (
     <div className="flex flex-1 flex-col">
       <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur">
@@ -54,25 +48,6 @@ export default function Homepage({ appHref }: { appHref?: string }) {
               {t("home.contactUs")}
             </a>
           </div>
-        </div>
-      </section>
-
-      <section id="tjenester" className="mx-auto w-full max-w-6xl px-4 py-16 sm:px-6">
-        <h2 className="text-2xl font-bold text-slate-900 sm:text-3xl">{t("home.servicesTitle")}</h2>
-        <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-3">
-          {SERVICES.map((service) => (
-            <div key={service.title} className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-              <div
-                className="aspect-[16/9] bg-cover bg-center"
-                style={{ backgroundImage: `url(${service.image})` }}
-              />
-              <div className="p-6">
-                <div className="mb-3 h-1 w-10 rounded-full bg-brand" />
-                <h3 className="text-lg font-semibold text-slate-900">{service.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-slate-600">{service.text}</p>
-              </div>
-            </div>
-          ))}
         </div>
       </section>
 
