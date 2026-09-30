@@ -60,20 +60,6 @@ export default function Homepage({ appHref }: { appHref?: string }) {
           <div>
             <h2 className="text-2xl font-bold text-slate-900 sm:text-3xl">{t("home.aboutTitle")}</h2>
             <p className="mt-4 text-sm leading-relaxed text-slate-600">{t("home.aboutP1")}</p>
-            <div className="mt-6 grid grid-cols-3 gap-2 sm:gap-4">
-              <div>
-                <p className="text-xl font-bold text-brand-dark sm:text-2xl">2012</p>
-                <p className="text-xs text-slate-500">{t("home.establishedLabel")}</p>
-              </div>
-              <div>
-                <p className="text-xl font-bold text-brand-dark sm:text-2xl">100+</p>
-                <p className="text-xs text-slate-500">{t("home.vehiclesLabel")}</p>
-              </div>
-              <div>
-                <p className="text-xl font-bold text-brand-dark sm:text-2xl">{t("home.nationwide")}</p>
-                <p className="text-xs text-slate-500">{t("home.nationwideLabel")}</p>
-              </div>
-            </div>
           </div>
         </div>
       </section>
