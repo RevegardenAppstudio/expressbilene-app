@@ -53,7 +53,7 @@ function LoginForm() {
   return (
     <div className="relative flex flex-1 flex-col overflow-hidden">
       <div className="absolute inset-0 -z-10 bg-slate-900">
-        <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: "url(/bakgrunn3.avif)" }} />
+        <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: "url(/fleet-single.avif)" }} />
         <div className="absolute inset-0 bg-black/55" />
       </div>
 
