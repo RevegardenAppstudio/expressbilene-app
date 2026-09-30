@@ -473,6 +473,73 @@ const no = {
     optional: "(valgfritt)",
     reasonRequired: "Begrunnelse er påkrevd.",
   },
+  personvern: {
+    title: "Personvernerklæring",
+    lastUpdated: "Sist oppdatert: 30. september 2026",
+    s1Title: "1. Behandlingsansvarlig",
+    s1Before:
+      "Expressbilene (org.nr. 920 917 658), Stangnesterminalen 8 A, 9409 Harstad, er behandlingsansvarlig for personopplysningene som behandles i dette systemet og gjennom kontaktskjemaet på nettsiden. Du kan nå oss på telefon",
+    s1After: ".",
+    s2Title: "2. Hvilke opplysninger vi behandler",
+    s2Intro: "For ansatte som bruker systemet, behandler vi:",
+    s2Item1: "Navn, e-postadresse, rolle og avdeling",
+    s2Item2: "Registrert arbeidstid (inn- og utstempling), rute og kjøretøy",
+    s2Item3: "Fravær og ferie, inkludert kategori ved sykefravær (egenmelding/sykemelding/sykt barn)",
+    s2Item4: "Hendelser knyttet til kjøretøy (f.eks. utforkjøring, verksted/service)",
+    s2Item5: "Endringslogg over hvem som har registrert eller endret hva, og når",
+    s2Note1:
+      "Sykefraværskategori regnes som en særlig kategori personopplysninger (helseopplysning) etter personvernforordningen. Vi registrerer kun kategorien — ikke diagnose eller annen helseinformasjon.",
+    s2Note2:
+      "Fra kontaktskjemaet på nettsiden behandler vi navn, e-postadresse og meldingen du skriver. Meldingen sendes videre til post@expressbilene.no via vår server, uten at innholdet lagres i noen database.",
+    s3Title: "3. Formål og behandlingsgrunnlag",
+    s3Body:
+      "Opplysningene brukes til å administrere arbeidsforholdet: timeføring, fraværsoppfølging og bemanning av kjøretøy. Behandlingsgrunnlaget er oppfyllelse av arbeidsavtalen og lovpålagte plikter som arbeidsgiver (blant annet knyttet til arbeidstid og sykefraværsoppfølging). Sykefraværskategori behandles med grunnlag i personvernforordningen artikkel 9 nr. 2 bokstav b, som gjelder arbeidsrettslige forpliktelser.",
+    s4Title: "4. Hvem har tilgang",
+    s4Body:
+      "Administratorer og ledere med moderator-rolle har tilgang til alle ansatte, på tvers av avdelinger. Opplysningene deles ikke med uvedkommende utenfor Expressbilene.",
+    s5Title: "5. Databehandlere",
+    s5Body:
+      "Systemet driftes med Supabase (database og innlogging, lagret innenfor EU/EØS) og Vercel (drift av nettsiden). Disse leverandørene behandler opplysninger på våre vegne i tråd med databehandleravtale.",
+    s6Title: "6. Lagringstid",
+    s6Body:
+      "Opplysningene lagres så lenge ansettelsesforholdet varer, og deretter så lenge det er nødvendig for å oppfylle lovpålagte plikter (for eksempel regnskapsregler for timeregistreringer). Deretter slettes eller anonymiseres opplysningene.",
+    s7Title: "7. Dine rettigheter",
+    s7Body:
+      "Du har rett til innsyn i, retting og sletting av egne opplysninger, samt rett til å be om begrensning av behandlingen. Ta kontakt med oss for å benytte disse rettighetene. Du kan også klage til Datatilsynet.",
+    s8Title: "8. Sikkerhet",
+    s8Body:
+      "All trafikk til systemet er kryptert (HTTPS), og tilgang til opplysninger er rollestyrt slik at hver bruker kun ser det som er relevant for egen rolle og avdeling.",
+    backToLogin: "Tilbake til innlogging",
+  },
+  vilkar: {
+    title: "Vilkår for bruk",
+    lastUpdated: "Sist oppdatert: 30. september 2026",
+    s1Title: "1. Om systemet",
+    s1Body:
+      "Dette systemet er et internt verktøy for Expressbilene, brukt av ansatte til å registrere arbeidstid, fravær og kjøretøybruk, og av ledere/administratorer til å følge opp bemanning og kjøretøypark. Systemet er ikke en offentlig tjeneste, og tilgang forutsetter en brukerkonto opprettet av Expressbilene.",
+    s2Title: "2. Brukerkonto",
+    s2Body:
+      "Brukerkontoen din opprettes av en administrator hos Expressbilene, og er personlig. Du er ansvarlig for å holde passordet ditt hemmelig og for aktivitet som skjer på din konto. Oppdager du at noen andre kan ha fått tilgang til kontoen din, må du bytte passord og varsle nærmeste leder umiddelbart.",
+    s3Title: "3. Riktig bruk",
+    s3Body:
+      "Systemet skal kun brukes til arbeidsrelaterte formål: registrering av egen arbeidstid, fravær og kjøretøybruk, samt oppfølging av dette der du har en lederrolle. Du er ansvarlig for at opplysningene du registrerer er korrekte. Ledere med moderator-rolle og administratorer kan rette eller supplere registreringer for ansatte på tvers av alle avdelinger — slike endringer logges.",
+    s4Title: "4. Tjenester (transport og bilutleie)",
+    s4Body:
+      "Nettsiden gir generell informasjon om Expressbilenes tjenester innen budbil, varetransport og varetaxi. Vi tar ikke imot bestillinger fra privatkunder. Konkrete transportoppdrag avtales direkte med kunden, og reguleres av egen avtale eller oppdragsbekreftelse, ikke av disse vilkårene.",
+    s5Title: "5. Ansvar",
+    s5Body:
+      "Expressbilene tilstreber at systemet er tilgjengelig og fungerer som forventet, men gir ingen garanti mot driftsavbrudd. Expressbilene er ikke ansvarlig for tap som følge av feilregistreringer gjort av brukeren selv.",
+    s6Title: "6. Endringer",
+    s6Body:
+      "Vi kan oppdatere disse vilkårene ved behov, for eksempel når systemet får ny funksjonalitet. Vesentlige endringer vil bli varslet til ansatte gjennom systemet.",
+    s7Title: "7. Lovvalg",
+    s7Body: "Norsk lov gjelder for bruk av dette systemet.",
+    s8Title: "8. Kontakt",
+    s8Before:
+      "Spørsmål om vilkårene rettes til Expressbilene (org.nr. 920 917 658), Stangnesterminalen 8 A, 9409 Harstad, på telefon",
+    s8After: ".",
+    backToLogin: "Tilbake til innlogging",
+  },
 } satisfies Dict;
 
 const en: typeof no = {
@@ -945,6 +1012,73 @@ const en: typeof no = {
     reasonLabel: "Reason",
     optional: "(optional)",
     reasonRequired: "A reason is required.",
+  },
+  personvern: {
+    title: "Privacy Policy",
+    lastUpdated: "Last updated: 30 September 2026",
+    s1Title: "1. Data controller",
+    s1Before:
+      "Expressbilene (org. no. 920 917 658), Stangnesterminalen 8 A, 9409 Harstad, Norway, is the data controller for the personal data processed in this system and through the contact form on the website. You can reach us by phone at",
+    s1After: ".",
+    s2Title: "2. What data we process",
+    s2Intro: "For employees using the system, we process:",
+    s2Item1: "Name, email address, role and department",
+    s2Item2: "Recorded working hours (clock in/out), route and vehicle",
+    s2Item3: "Absence and vacation, including category for sick leave (self-certified/doctor-certified/sick child)",
+    s2Item4: "Vehicle-related events (e.g. off-road incidents, workshop/service)",
+    s2Item5: "Change log of who registered or changed what, and when",
+    s2Note1:
+      "The sick-leave category is considered a special category of personal data (health data) under the GDPR. We only record the category — not any diagnosis or other health information.",
+    s2Note2:
+      "From the contact form on the website, we process the name, email address and message you write. The message is forwarded to post@expressbilene.no via our server, without the content being stored in any database.",
+    s3Title: "3. Purpose and legal basis",
+    s3Body:
+      "The data is used to administer the employment relationship: time tracking, absence follow-up and vehicle staffing. The legal basis is performance of the employment contract and statutory obligations as an employer (including obligations related to working hours and sick-leave follow-up). The sick-leave category is processed on the basis of GDPR Article 9(2)(b), concerning obligations in the field of employment law.",
+    s4Title: "4. Who has access",
+    s4Body:
+      "Administrators and managers with the moderator role have access to all employees, across departments. The data is not shared with unauthorized parties outside Expressbilene.",
+    s5Title: "5. Data processors",
+    s5Body:
+      "The system runs on Supabase (database and login, stored within the EU/EEA) and Vercel (website hosting). These providers process data on our behalf under a data processing agreement.",
+    s6Title: "6. Retention period",
+    s6Body:
+      "The data is stored for as long as the employment relationship lasts, and thereafter for as long as necessary to fulfil statutory obligations (for example accounting rules for time records). It is then deleted or anonymized.",
+    s7Title: "7. Your rights",
+    s7Body:
+      "You have the right to access, correct and delete your own data, as well as the right to request restriction of processing. Contact us to exercise these rights. You may also file a complaint with the Norwegian Data Protection Authority (Datatilsynet).",
+    s8Title: "8. Security",
+    s8Body:
+      "All traffic to the system is encrypted (HTTPS), and access to data is role-based so that each user only sees what is relevant to their own role and department.",
+    backToLogin: "Back to login",
+  },
+  vilkar: {
+    title: "Terms of Use",
+    lastUpdated: "Last updated: 30 September 2026",
+    s1Title: "1. About the system",
+    s1Body:
+      "This system is an internal tool for Expressbilene, used by employees to record working hours, absence and vehicle use, and by managers/administrators to follow up staffing and the vehicle fleet. The system is not a public service, and access requires a user account created by Expressbilene.",
+    s2Title: "2. User account",
+    s2Body:
+      "Your user account is created by an administrator at Expressbilene, and is personal. You are responsible for keeping your password secret and for activity that occurs on your account. If you discover that someone else may have gained access to your account, you must change your password and notify your nearest manager immediately.",
+    s3Title: "3. Proper use",
+    s3Body:
+      "The system may only be used for work-related purposes: recording your own working hours, absence and vehicle use, and following up on this where you have a manager role. You are responsible for ensuring the data you register is correct. Managers with the moderator role and administrators may correct or supplement records for employees across all departments — such changes are logged.",
+    s4Title: "4. Services (transport and car rental)",
+    s4Body:
+      "The website provides general information about Expressbilene's services within courier delivery, freight transport and cargo taxi. We do not accept orders from private customers. Specific transport assignments are agreed directly with the customer and are governed by a separate agreement or order confirmation, not by these terms.",
+    s5Title: "5. Liability",
+    s5Body:
+      "Expressbilene strives to keep the system available and functioning as expected, but gives no guarantee against downtime. Expressbilene is not liable for losses resulting from incorrect entries made by the user.",
+    s6Title: "6. Changes",
+    s6Body:
+      "We may update these terms as needed, for example when the system gains new functionality. Significant changes will be communicated to employees through the system.",
+    s7Title: "7. Governing law",
+    s7Body: "Norwegian law applies to the use of this system.",
+    s8Title: "8. Contact",
+    s8Before:
+      "Questions about these terms should be directed to Expressbilene (org. no. 920 917 658), Stangnesterminalen 8 A, 9409 Harstad, Norway, by phone at",
+    s8After: ".",
+    backToLogin: "Back to login",
   },
 };
 
