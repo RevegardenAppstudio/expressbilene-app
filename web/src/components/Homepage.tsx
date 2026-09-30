@@ -35,10 +35,16 @@ export default function Homepage({ appHref }: { appHref?: string }) {
 
       <section id="om-oss" className="bg-slate-50">
         <div className="mx-auto grid w-full max-w-6xl grid-cols-1 items-center gap-10 px-4 py-16 sm:px-6 md:grid-cols-2">
-          <div
-            className="aspect-[4/3] rounded-xl bg-cover bg-center shadow-sm"
-            style={{ backgroundImage: "url(/fleet-lineup.avif)" }}
-          />
+          <div className="relative pb-8 pr-8 sm:pb-10 sm:pr-10">
+            <div
+              className="aspect-[4/3] rounded-xl bg-cover bg-center shadow-sm"
+              style={{ backgroundImage: "url(/fleet-lineup.avif)" }}
+            />
+            <div
+              className="absolute bottom-0 right-0 aspect-[4/3] w-1/2 rounded-xl border-4 border-slate-50 bg-cover bg-center shadow-lg"
+              style={{ backgroundImage: "url(/fleet-van.avif)" }}
+            />
+          </div>
           <div>
             <h2 className="text-2xl font-bold text-slate-900 sm:text-3xl">{t("home.aboutTitle")}</h2>
             <p className="mt-4 text-sm leading-relaxed text-slate-600">{t("home.aboutP1")}</p>

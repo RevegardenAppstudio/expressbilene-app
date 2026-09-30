@@ -245,7 +245,7 @@ const no = {
     goToApp: "Intranett",
     aboutTitle: "Kort om oss",
     aboutP1:
-      "Expressbilene ble etablert i 2012 og har siden da rukket å bli et stort selskap med tungvektere på kundelisten. Kundene våre består av samlastere, distribusjonsselskaper, budfirmaer, speditører og lignende.",
+      "Expressbilene ble etablert i 2012 og har siden da rukket å bli et mellomstort selskap med flere tungvektere på kundelisten. Kundene våre består av samlastere, distribusjonsselskaper, budfirmaer, speditører etc.",
     contactTitle: "Kontakt oss",
   },
   avdelinger: {
@@ -773,7 +773,7 @@ const en: typeof no = {
     goToApp: "Intranet",
     aboutTitle: "About us",
     aboutP1:
-      "Expressbilene was established in 2012 and has since then grown into a large company with heavyweight clients on its books. Our customers include consolidators, distribution companies, courier firms, freight forwarders and similar businesses.",
+      "Expressbilene was established in 2012 and has since then grown into a mid-sized company with several heavyweight clients on its books. Our customers include consolidators, distribution companies, courier firms, freight forwarders etc.",
     contactTitle: "Contact us",
   },
   avdelinger: {
