@@ -241,7 +241,6 @@ const no = {
     overlapError: "Du har allerede en fraværssøknad som overlapper med denne perioden.",
   },
   home: {
-    struktur: "Vår struktur",
     login: "Logg inn",
     goToApp: "Intranett",
     heroTagline: "Spesialist på bydistribusjon, distriktsruter og ekspressleveringer — med kjøretøy stasjonert i hele Norge.",
@@ -793,7 +792,6 @@ const en: typeof no = {
     overlapError: "You already have an absence request that overlaps with this period.",
   },
   home: {
-    struktur: "Our structure",
     login: "Log in",
     goToApp: "Intranet",
     heroTagline: "Specialists in urban distribution, regional routes and express deliveries — with vehicles stationed across Norway.",

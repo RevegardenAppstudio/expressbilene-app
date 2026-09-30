@@ -17,12 +17,6 @@ export default function Homepage({ appHref }: { appHref?: string }) {
           <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
             <LanguageSwitcher />
             <Link
-              href="/struktur"
-              className="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 sm:px-4"
-            >
-              {t("home.struktur")}
-            </Link>
-            <Link
               href={appHref ?? "/login"}
               className="rounded-md bg-brand px-4 py-2 text-sm font-semibold text-black transition-colors hover:brightness-90"
             >
