@@ -540,6 +540,18 @@ const no = {
     s8After: ".",
     backToLogin: "Tilbake til innlogging",
   },
+  login: {
+    homeLink: "← Hjemmeside",
+    subtitle: "Logg inn på Expressbilene intranett",
+    email: "E-post",
+    password: "Passord",
+    rememberMe: "Husk meg",
+    invalidCredentialsError: "Feil e-post eller passord.",
+    loggingIn: "Logger inn …",
+    login: "Logg inn",
+    forgotPassword: "Glemt passord?",
+    newEmployeeHint: "Ny ansatt? Sjekk e-posten din — den inneholder en lenke for å sette eget passord.",
+  },
 } satisfies Dict;
 
 const en: typeof no = {
@@ -1079,6 +1091,18 @@ const en: typeof no = {
       "Questions about these terms should be directed to Expressbilene (org. no. 920 917 658), Stangnesterminalen 8 A, 9409 Harstad, Norway, by phone at",
     s8After: ".",
     backToLogin: "Back to login",
+  },
+  login: {
+    homeLink: "← Homepage",
+    subtitle: "Log in to the Expressbilene intranet",
+    email: "Email",
+    password: "Password",
+    rememberMe: "Remember me",
+    invalidCredentialsError: "Incorrect email or password.",
+    loggingIn: "Logging in …",
+    login: "Log in",
+    forgotPassword: "Forgot password?",
+    newEmployeeHint: "New employee? Check your email — it contains a link to set your own password.",
   },
 };
 

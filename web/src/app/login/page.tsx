@@ -6,8 +6,11 @@ import Link from "next/link";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import Footer from "@/components/Footer";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { LanguageProvider, useLanguage } from "@/lib/i18n/LanguageContext";
 
-export default function LoginPage() {
+function LoginForm() {
+  const { t } = useLanguage();
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -25,7 +28,7 @@ export default function LoginPage() {
 
     if (error) {
       setLoading(false);
-      setError("Feil e-post eller passord.");
+      setError(t("login.invalidCredentialsError"));
       return;
     }
 
@@ -58,14 +61,17 @@ export default function LoginPage() {
         href="/"
         className="absolute left-4 top-4 z-10 flex items-center gap-1.5 rounded-md border border-white/25 bg-white/10 px-3 py-2 text-sm font-medium text-white shadow-lg backdrop-blur-md transition-colors hover:bg-white/20"
       >
-        ← Hjemmeside
+        {t("login.homeLink")}
       </Link>
+      <div className="absolute right-4 top-4 z-10">
+        <LanguageSwitcher variant="light" />
+      </div>
 
       <div className="flex flex-1 items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
           <Image src="/logo-white.png" alt="Expressbilene" width={2170} height={725} priority className="mx-auto h-12 w-auto sm:h-14" />
-          <p className="mt-3 text-sm text-slate-200">Logg inn på Expressbilene intranett</p>
+          <p className="mt-3 text-sm text-slate-200">{t("login.subtitle")}</p>
         </div>
 
         <form
@@ -74,7 +80,7 @@ export default function LoginPage() {
         >
           <div>
             <label htmlFor="email" className="mb-1 block text-sm font-medium text-white">
-              E-post
+              {t("login.email")}
             </label>
             <input
               id="email"
@@ -88,7 +94,7 @@ export default function LoginPage() {
           </div>
           <div>
             <label htmlFor="password" className="mb-1 block text-sm font-medium text-white">
-              Passord
+              {t("login.password")}
             </label>
             <input
               id="password"
@@ -108,7 +114,7 @@ export default function LoginPage() {
               onChange={(e) => setRememberMe(e.target.checked)}
               className="h-4 w-4 rounded border-white/40 text-brand focus:ring-brand"
             />
-            Husk meg
+            {t("login.rememberMe")}
           </label>
 
           {error && <p className="text-sm text-red-300">{error}</p>}
@@ -118,24 +124,31 @@ export default function LoginPage() {
             disabled={loading}
             className="w-full rounded-md bg-brand px-4 py-2 text-sm font-semibold text-black transition-colors hover:brightness-90 disabled:opacity-60"
           >
-            {loading ? "Logger inn …" : "Logg inn"}
+            {loading ? t("login.loggingIn") : t("login.login")}
           </button>
 
           <div className="text-center">
             <Link href="/glemt-passord" className="text-sm text-white/80 hover:text-white">
-              Glemt passord?
+              {t("login.forgotPassword")}
             </Link>
           </div>
         </form>
 
         <p className="mt-6 text-center text-xs text-slate-300">
-          Ny ansatt? Sjekk e-posten din — den inneholder en lenke for å sette eget
-          passord.
+          {t("login.newEmployeeHint")}
         </p>
       </div>
       </div>
 
       <Footer variant="light" />
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <LanguageProvider initialLanguage="no" userId={null}>
+      <LoginForm />
+    </LanguageProvider>
   );
 }
