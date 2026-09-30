@@ -73,7 +73,6 @@ export default function Homepage({ appHref }: { appHref?: string }) {
           >
             412 81 000
           </a>
-          <p className="mt-1 text-sm text-slate-500">{t("home.contactHours")}</p>
           <a
             href="mailto:post@expressbilene.no"
             className="mt-4 block text-lg font-semibold text-brand-dark hover:brightness-90"
