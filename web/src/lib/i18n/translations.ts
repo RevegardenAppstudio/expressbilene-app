@@ -167,8 +167,8 @@ const no = {
   },
   varsler: {
     title: "Varsler",
-    subtitle: "Sykefravær, hendelser og alle varsler",
-    tabSykefravaer: "Sykefravær",
+    subtitle: "Fravær, hendelser og alle varsler",
+    tabSykefravaer: "Fravær",
     tabHendelser: "Hendelser",
     tabAlleVarsler: "Alle varsler",
     tabEndringslogg: "Endringslogg",
@@ -719,8 +719,8 @@ const en: typeof no = {
   },
   varsler: {
     title: "Notifications",
-    subtitle: "Sick leave, events and all notifications",
-    tabSykefravaer: "Sick leave",
+    subtitle: "Absences, events and all notifications",
+    tabSykefravaer: "Absences",
     tabHendelser: "Events",
     tabAlleVarsler: "All notifications",
     tabEndringslogg: "Change log",
