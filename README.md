@@ -21,15 +21,20 @@ Expressbilene. Består av to apper som deler samme Supabase-backend:
   `profiles.role`. Moderator har samme tilgang som admin til å administrere
   ansatte, ruter og biler, og til å godkjenne fravær — på tvers av alle
   avdelinger, ikke bare egen. Kun admin kan invitere/redigere/slette
-  brukere, deaktivere kontoer og se endringsloggen. Den aller første
-  brukeren som opprettes (via `/oppsett` i nettappen) blir automatisk admin.
-  Alle senere ansatte legges til av en admin via invitasjon.
+  brukere, deaktivere kontoer og se endringsloggen. Moderator kan likevel
+  tilbakestille passordet til en sjåfør direkte (krisetilfelle der sjåføren
+  ikke har tilgang til e-posten sin) — men ikke for andre moderatorer eller
+  admin, for å hindre kontoovertakelse. Den aller første brukeren som
+  opprettes (via `/oppsett` i nettappen) blir automatisk admin. Alle senere
+  ansatte legges til av en admin via invitasjon.
 - **Brukeradministrasjon** skjer via Supabase Edge Functions
   (`supabase/functions/`) som bruker secret key server-side:
   - `invite-user` — admin inviterer en ny ansatt på e-post
   - `admin-list-users` — admin/moderator ser status (aktiv/invitert) på alle ansatte
   - `admin-update-user` — admin endrer navn/rolle/avdeling på en ansatt
   - `admin-delete-user` — admin fjerner en ansattkonto
+  - `reset-user-password` — admin/moderator tilbakestiller passordet til en
+    ansatt direkte (moderator kun for sjåfør)
   - `notify-staff-push` — sender push-varsel til admin/moderator på mobil
     (filtrert på den enkeltes varslingsinnstillinger, se `/innstillinger`)
 

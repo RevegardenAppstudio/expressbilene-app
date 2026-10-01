@@ -77,6 +77,11 @@ export default function AvdelingerPage() {
     null
   );
 
+  const [pendingResetPasswordUser, setPendingResetPasswordUser] = useState<{ id: string; name: string } | null>(null);
+  const [resetPasswordValue, setResetPasswordValue] = useState("");
+  const [resetPasswordError, setResetPasswordError] = useState<string | null>(null);
+  const [resettingPassword, setResettingPassword] = useState(false);
+
   const [pendingDeleteDepartment, setPendingDeleteDepartment] = useState<string | null>(null);
   const [pendingDeleteRoute, setPendingDeleteRoute] = useState<string | null>(null);
   const [pendingDeleteVehicle, setPendingDeleteVehicle] = useState<string | null>(null);
@@ -84,6 +89,7 @@ export default function AvdelingerPage() {
   const [pendingVehicleChange, setPendingVehicleChange] = useState<{ vehicleId: string; departmentId: string | null } | null>(null);
 
   const isAdmin = myRole === "admin";
+  const isModerator = myRole === "moderator";
 
   const loadActiveUsers = useCallback(async () => {
     const { data: activeData } = await supabase.from("time_entries").select("user_id").not("clock_in", "is", null).is("clock_out", null);
@@ -449,6 +455,87 @@ export default function AvdelingerPage() {
     );
     showToast(t(target.deactivate ? "avdelinger.userDeactivated" : "avdelinger.userReactivated", { name: target.name }));
   }
+
+  async function confirmResetPassword() {
+    const target = pendingResetPasswordUser;
+    if (!target) return;
+    if (resetPasswordValue.length < 8) {
+      setResetPasswordError(t("avdelinger.resetPasswordTooShort"));
+      return;
+    }
+    setResettingPassword(true);
+    setResetPasswordError(null);
+    const { error } = await supabase.functions.invoke("reset-user-password", {
+      body: { user_id: target.id, new_password: resetPasswordValue },
+    });
+    setResettingPassword(false);
+    if (error) {
+      let msg = t("avdelinger.resetPasswordFailed");
+      if ("context" in error && error.context instanceof Response) {
+        try {
+          const body = await error.context.json();
+          if (body?.error) msg = body.error;
+        } catch {
+          // Svaret var ikke JSON -- bruker den generiske meldingen.
+        }
+      }
+      setResetPasswordError(msg);
+      showToast(msg, "error");
+      return;
+    }
+    showToast(t("avdelinger.resetPasswordSuccess", { name: target.name }));
+    setPendingResetPasswordUser(null);
+    setResetPasswordValue("");
+  }
+
+  const resetPasswordModal = pendingResetPasswordUser && (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+      onClick={() => setPendingResetPasswordUser(null)}
+    >
+      <div className="w-full max-w-sm rounded-xl bg-white p-5 shadow-lg" onClick={(e) => e.stopPropagation()}>
+        <h2 className="text-base font-semibold text-slate-900">
+          {t("avdelinger.resetPasswordTitle", { name: pendingResetPasswordUser.name })}
+        </h2>
+        <p className="mt-1 text-sm text-slate-500">{t("avdelinger.resetPasswordMessage")}</p>
+
+        <label className="mb-1 mt-4 block text-xs font-medium text-slate-600">{t("avdelinger.newPassword")}</label>
+        <div className="flex gap-2">
+          <input
+            autoFocus
+            type="text"
+            value={resetPasswordValue}
+            onChange={(e) => setResetPasswordValue(e.target.value)}
+            className="flex-1 rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand"
+          />
+          <button
+            type="button"
+            onClick={() => setResetPasswordValue(Math.random().toString(36).slice(2, 8) + Math.random().toString(36).slice(2, 6))}
+            className="shrink-0 rounded-md border border-slate-300 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100"
+          >
+            {t("avdelinger.generatePassword")}
+          </button>
+        </div>
+        {resetPasswordError && <p className="mt-1 text-xs text-red-600">{resetPasswordError}</p>}
+
+        <div className="mt-4 flex justify-end gap-2">
+          <button
+            onClick={() => setPendingResetPasswordUser(null)}
+            className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-100"
+          >
+            {t("reasonDialog.cancel")}
+          </button>
+          <button
+            onClick={confirmResetPassword}
+            disabled={resettingPassword}
+            className="rounded-md bg-brand px-3 py-1.5 text-sm font-semibold text-black hover:brightness-90 disabled:opacity-60"
+          >
+            {resettingPassword ? t("common.saving") : t("avdelinger.resetPassword")}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 
   const routeCount = (departmentId: string | null) => routes.filter((r) => r.department_id === departmentId).length;
   const vehicleCount = (departmentId: string | null) => vehicles.filter((v) => v.department_id === departmentId).length;
@@ -820,7 +907,7 @@ export default function AvdelingerPage() {
                     <th className="px-4 py-2">{t("avdelinger.email")}</th>
                     <th className="px-4 py-2">{t("avdelinger.role")}</th>
                     <th className="px-4 py-2">{t("avdelinger.status")}</th>
-                    {isAdmin && <th className="px-4 py-2"></th>}
+                    {(isAdmin || isModerator) && <th className="px-4 py-2"></th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -889,27 +976,45 @@ export default function AvdelingerPage() {
                                   : t("avdelinger.invited")}
                             </span>
                           </td>
-                          {isAdmin && (
+                          {(isAdmin || isModerator) && (
                             <td className="px-4 py-2 text-right whitespace-nowrap" data-label="">
-                              <button onClick={() => startEditUser(u)} className="mr-3 text-xs text-slate-400 hover:text-brand-dark">
-                                {t("common.edit")}
-                              </button>
-                              <button
-                                onClick={() => setPendingEmployeeChange({ userId: u.id, departmentId: null })}
-                                className="mr-3 text-xs text-slate-400 hover:text-brand-dark"
-                              >
-                                {t("avdelinger.removeFromDept")}
-                              </button>
-                              <button
-                                onClick={() =>
-                                  setPendingDeactivateUser({ id: u.id, name: u.full_name, deactivate: u.status !== "deaktivert" })
-                                }
-                                className={`text-xs ${
-                                  u.status === "deaktivert" ? "text-slate-400 hover:text-brand-dark" : "text-slate-400 hover:text-red-600"
-                                }`}
-                              >
-                                {u.status === "deaktivert" ? t("avdelinger.reactivate") : t("avdelinger.deactivate")}
-                              </button>
+                              {isAdmin && (
+                                <>
+                                  <button onClick={() => startEditUser(u)} className="mr-3 text-xs text-slate-400 hover:text-brand-dark">
+                                    {t("common.edit")}
+                                  </button>
+                                  <button
+                                    onClick={() => setPendingEmployeeChange({ userId: u.id, departmentId: null })}
+                                    className="mr-3 text-xs text-slate-400 hover:text-brand-dark"
+                                  >
+                                    {t("avdelinger.removeFromDept")}
+                                  </button>
+                                </>
+                              )}
+                              {u.status !== "invitert" && (isAdmin || u.role === "sjafor") && (
+                                <button
+                                  onClick={() => {
+                                    setPendingResetPasswordUser({ id: u.id, name: u.full_name });
+                                    setResetPasswordValue("");
+                                    setResetPasswordError(null);
+                                  }}
+                                  className="mr-3 text-xs text-slate-400 hover:text-brand-dark"
+                                >
+                                  {t("avdelinger.resetPassword")}
+                                </button>
+                              )}
+                              {isAdmin && (
+                                <button
+                                  onClick={() =>
+                                    setPendingDeactivateUser({ id: u.id, name: u.full_name, deactivate: u.status !== "deaktivert" })
+                                  }
+                                  className={`text-xs ${
+                                    u.status === "deaktivert" ? "text-slate-400 hover:text-brand-dark" : "text-slate-400 hover:text-red-600"
+                                  }`}
+                                >
+                                  {u.status === "deaktivert" ? t("avdelinger.reactivate") : t("avdelinger.deactivate")}
+                                </button>
+                              )}
                             </td>
                           )}
                         </tr>
@@ -997,6 +1102,8 @@ export default function AvdelingerPage() {
             onCancel={() => setPendingDeactivateUser(null)}
           />
         )}
+
+        {resetPasswordModal}
       </div>
     );
   }
@@ -1115,12 +1222,13 @@ export default function AvdelingerPage() {
                   <th className="px-4 py-2">{t("sammendrag.department")}</th>
                   <th className="px-4 py-2">{t("avdelinger.role")}</th>
                   <th className="px-4 py-2">{t("avdelinger.activeStatus")}</th>
+                  {(isAdmin || isModerator) && <th className="px-4 py-2"></th>}
                 </tr>
               </thead>
               <tbody>
                 {users.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="px-4 py-6 text-center text-slate-400">
+                    <td colSpan={5} className="px-4 py-6 text-center text-slate-400">
                       {t("avdelinger.noEmployees")}
                     </td>
                   </tr>
@@ -1146,6 +1254,22 @@ export default function AvdelingerPage() {
                           <span className="text-xs text-slate-400">{t("avdelinger.notClockedIn")}</span>
                         )}
                       </td>
+                      {(isAdmin || isModerator) && (
+                        <td className="px-4 py-2 text-right whitespace-nowrap" data-label="">
+                          {u.status !== "invitert" && (isAdmin || u.role === "sjafor") && (
+                            <button
+                              onClick={() => {
+                                setPendingResetPasswordUser({ id: u.id, name: u.full_name });
+                                setResetPasswordValue("");
+                                setResetPasswordError(null);
+                              }}
+                              className="text-xs text-slate-400 hover:text-brand-dark"
+                            >
+                              {t("avdelinger.resetPassword")}
+                            </button>
+                          )}
+                        </td>
+                      )}
                     </tr>
                   ))
                 )}
@@ -1246,6 +1370,7 @@ export default function AvdelingerPage() {
             </div>
           </>
         )}
+        {resetPasswordModal}
       </div>
     );
   }

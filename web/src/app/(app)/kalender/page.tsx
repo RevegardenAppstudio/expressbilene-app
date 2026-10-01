@@ -14,7 +14,6 @@ import {
   type Profile,
   type Route,
   type RouteCancellation,
-  type TimeEntry,
   type Vehicle,
   type VehicleServiceBooking,
 } from "@/lib/types";
@@ -28,11 +27,11 @@ const TYPE_DOT: Record<string, string> = {
   sykt_barn: "bg-pink-500",
   ferie: "bg-sky-500",
   permisjon: "bg-purple-500",
-  fri: "bg-slate-400",
+  fri: "bg-green-500",
 };
 
 const SERVICE_DOT = "bg-orange-600";
-const CANCEL_DOT = "bg-rose-600";
+const CANCEL_DOT = "bg-slate-500";
 
 type AddMode = "fravaer" | "verksted" | "innstill" | null;
 
@@ -44,7 +43,6 @@ export default function KalenderPage() {
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth());
   const [absences, setAbsences] = useState<Absence[]>([]);
-  const [activeEntries, setActiveEntries] = useState<TimeEntry[]>([]);
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
   const [serviceBookings, setServiceBookings] = useState<VehicleServiceBooking[]>([]);
   const [vehicles, setVehicles] = useState<Record<string, Vehicle>>({});
@@ -75,12 +73,6 @@ export default function KalenderPage() {
   const grid = useMemo(() => buildMonthGrid(year, month), [year, month]);
   const gridStart = toIsoDate(grid[0]);
   const gridEnd = toIsoDate(grid[41]);
-
-  const loadActive = useCallback(async () => {
-    const { data } = await supabase.from("time_entries").select("*").not("clock_in", "is", null).is("clock_out", null);
-    if (data) setActiveEntries(data as TimeEntry[]);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -130,30 +122,13 @@ export default function KalenderPage() {
     if (cancellationData) setRouteCancellations(cancellationData as RouteCancellation[]);
     if (meResult.data?.role === "moderator") setIsModerator(true);
     if (meResult.data?.role === "admin") setIsAdmin(true);
-    await loadActive();
     setLoading(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gridStart, gridEnd, loadActive]);
+  }, [gridStart, gridEnd]);
 
   useEffect(() => {
     load();
   }, [load]);
-
-  // "Aktive nå" oppdateres i sanntid via Supabase Realtime, ikke bare ved
-  // manuell refresh -- speiler samme oppsett som Kalender-skjermen i
-  // mobilappen.
-  useEffect(() => {
-    const channel = supabase
-      .channel("kalender-active-entries")
-      .on("postgres_changes", { event: "*", schema: "public", table: "time_entries" }, () => {
-        loadActive();
-      })
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loadActive]);
 
   useEffect(() => {
     try {
@@ -207,11 +182,6 @@ export default function KalenderPage() {
       return routeById[c.route_id]?.department_id === departmentFilter;
     });
   }
-
-  const activeNow = activeEntries.filter((e) => {
-    if (!departmentFilter) return true;
-    return profiles[e.user_id]?.department_id === departmentFilter;
-  });
 
   const isStaff = isAdmin || isModerator;
   const routesForFilter = departmentFilter ? routes.filter((r) => r.department_id === departmentFilter) : routes;
@@ -413,15 +383,6 @@ export default function KalenderPage() {
       </div>
 
       <div className="flex flex-wrap gap-2 text-xs">
-        <button
-          onClick={() => toggleType("active")}
-          className={`flex items-center gap-1.5 rounded-full border px-2 py-1 transition-colors ${
-            hiddenTypes.has("active") ? "border-slate-200 text-slate-400 opacity-50" : "border-slate-200 text-slate-600 hover:bg-slate-50"
-          }`}
-        >
-          <span className="h-2 w-2 rounded-full bg-green-500" />
-          {t("kalender.activeNow")}
-        </button>
         {(Object.keys(ABSENCE_TYPE_LABELS) as (keyof typeof ABSENCE_TYPE_LABELS)[]).map((value) => (
           <button
             key={value}
@@ -468,12 +429,11 @@ export default function KalenderPage() {
             const iso = toIsoDate(date);
             const inMonth = date.getMonth() === month;
             const dayAbsences = absencesForDay(iso);
-            const showActive = iso === todayIso && !hiddenTypes.has("active") ? activeNow : [];
             const visibleAbsences = dayAbsences.filter((a) => !hiddenTypes.has(a.type));
             const visibleServices = hiddenTypes.has("service") ? [] : servicesForDay(iso);
             const visibleCancellations = hiddenTypes.has("cancellation") ? [] : cancellationsForDay(iso);
             const hasContent =
-              showActive.length > 0 || visibleAbsences.length > 0 || visibleServices.length > 0 || visibleCancellations.length > 0;
+              visibleAbsences.length > 0 || visibleServices.length > 0 || visibleCancellations.length > 0;
             const isClickable = hasContent || isStaff;
             return (
               <div
@@ -485,19 +445,6 @@ export default function KalenderPage() {
               >
                 <div className="text-xs font-medium">{date.getDate()}</div>
                 <div className="mt-1 space-y-0.5">
-                  {showActive.slice(0, 3).map((e) => (
-                    <div
-                      key={`active-${e.id}`}
-                      title={t("kalender.clockedInTitle", { name: profiles[e.user_id]?.full_name ?? "?" })}
-                      className="flex items-center gap-1 truncate rounded bg-green-50 px-1 py-0.5 text-[10px] text-green-700"
-                    >
-                      <span className="h-1.5 w-1.5 shrink-0 animate-pulse rounded-full bg-green-500" />
-                      <span className="truncate">{profiles[e.user_id]?.full_name.split(" ")[0] ?? "?"}</span>
-                    </div>
-                  ))}
-                  {showActive.length > 3 && (
-                    <div className="text-[10px] text-green-600">{t("kalender.moreActive", { count: showActive.length - 3 })}</div>
-                  )}
                   {visibleAbsences.slice(0, 3).map((a) => (
                     <div
                       key={a.id}
@@ -528,14 +475,14 @@ export default function KalenderPage() {
                     <div
                       key={c.id}
                       title={`${routeById[c.route_id]?.name ?? "?"}${c.note ? ` — ${c.note}` : ""}`}
-                      className="flex items-center gap-1 truncate rounded bg-rose-50 px-1 py-0.5 text-[10px] text-rose-700"
+                      className="flex items-center gap-1 truncate rounded bg-slate-100 px-1 py-0.5 text-[10px] text-slate-600"
                     >
                       <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${CANCEL_DOT}`} />
                       <span className="truncate">{routeById[c.route_id]?.name ?? "?"}</span>
                     </div>
                   ))}
                   {visibleCancellations.length > 3 && (
-                    <div className="text-[10px] text-rose-700">{t("kalender.moreCancellation", { count: visibleCancellations.length - 3 })}</div>
+                    <div className="text-[10px] text-slate-500">{t("kalender.moreCancellation", { count: visibleCancellations.length - 3 })}</div>
                   )}
                 </div>
               </div>
@@ -548,7 +495,6 @@ export default function KalenderPage() {
 
       {selectedDayIso && (() => {
         const dayDate = new Date(selectedDayIso + "T00:00:00");
-        const showActive = selectedDayIso === todayIso && !hiddenTypes.has("active") ? activeNow : [];
         const visibleAbsences = absencesForDay(selectedDayIso).filter((a) => !hiddenTypes.has(a.type));
         const visibleServices = hiddenTypes.has("service") ? [] : servicesForDay(selectedDayIso);
         const visibleCancellations = hiddenTypes.has("cancellation") ? [] : cancellationsForDay(selectedDayIso);
@@ -564,26 +510,12 @@ export default function KalenderPage() {
                 </button>
               </div>
 
-              {showActive.length === 0 &&
-              visibleAbsences.length === 0 &&
+              {visibleAbsences.length === 0 &&
               visibleServices.length === 0 &&
               visibleCancellations.length === 0 ? (
                 <p className="text-sm text-slate-400">{t("kalender.noEntriesForDay")}</p>
               ) : (
                 <div className="space-y-3">
-                  {showActive.length > 0 && (
-                    <div>
-                      <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-slate-400">{t("kalender.activeNowHeading")}</p>
-                      <div className="space-y-1">
-                        {showActive.map((e) => (
-                          <div key={`active-${e.id}`} className="flex items-center gap-2 text-sm text-slate-700">
-                            <span className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-green-500" />
-                            {profiles[e.user_id]?.full_name ?? t("kalender.unknown")}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                   {visibleAbsences.length > 0 && (
                     <div>
                       <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-slate-400">{t("kalender.absenceHeading")}</p>
