@@ -130,7 +130,7 @@ export default function KalenderScreen({ userId, profile }: { userId: string; pr
     const [{ data: absenceData }, { data: profileData }, { data: deps }, { data: vehicleData }, { data: bookingData }, { data: routeData }, { data: cancellationData }] =
       await Promise.all([
         supabase.from("absences").select("*").lte("start_date", gridEnd).gte("end_date", gridStart).neq("status", "avslatt"),
-        supabase.from("profiles").select("*"),
+        supabase.from("profiles").select("*").eq("is_employee", true),
         supabase.from("departments").select("*").order("name"),
         supabase.from("vehicles").select("*"),
         supabase.from("vehicle_service_bookings").select("*").lte("service_date", gridEnd).gte("service_date", gridStart),

@@ -63,9 +63,12 @@ Deno.serve(async (req: Request) => {
     // Moderator ser nå ansatte på tvers av alle avdelinger, akkurat som
     // admin -- kun selve CRUD-knappene (inviter/rediger/slett/deaktiver) er
     // fortsatt begrenset til admin i klienten.
+    // is_employee = false ekskluderer interne/IT-kontoer (admin-rolle, men
+    // ikke faktisk ansatt) fra ansatt-listen -- se profiles.is_employee.
     const { data: profiles, error: profilesError } = await adminClient
       .from("profiles")
       .select("id, email, full_name, role, department_id, deactivated_at, created_at, departments(name)")
+      .eq("is_employee", true)
       .order("full_name");
 
     if (profilesError) {

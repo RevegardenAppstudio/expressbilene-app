@@ -137,7 +137,7 @@ export default function SammendragPage() {
 
     if (staff) {
       const [{ data: allProfiles }, { data: deps }, { data: pending }] = await Promise.all([
-        supabase.from("profiles").select("*").order("full_name"),
+        supabase.from("profiles").select("*").eq("is_employee", true).order("full_name"),
         supabase.from("departments").select("*").order("name"),
         supabase.from("absences").select("id").eq("status", "venter"),
       ]);

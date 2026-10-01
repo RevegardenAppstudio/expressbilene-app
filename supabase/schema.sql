@@ -32,6 +32,11 @@ create table if not exists public.profiles (
   -- Brukerens foretrukne visningsspråk. Lagres per bruker (ikke per enhet)
   -- slik at valget synkes mellom nettsiden og mobilappen.
   language text not null default 'no' check (language in ('no', 'en')),
+  -- false for interne/IT-kontoer (f.eks. utvikleren) som har admin-rolle
+  -- uten å faktisk være ansatt hos Expressbilene. Ekskluderes fra
+  -- ansatt-lister/-velgere (admin-list-users, sammendrag, mobil Ansatte og
+  -- kalender) -- påvirker ikke rolle, RLS eller andre tilganger.
+  is_employee boolean not null default true,
   created_at timestamptz not null default now()
 );
 

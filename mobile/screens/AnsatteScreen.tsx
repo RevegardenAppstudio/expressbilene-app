@@ -77,7 +77,7 @@ export default function AnsatteScreen({ userId, profile }: { userId: string; pro
 
   const loadEmployees = useCallback(async () => {
     const [{ data }, { data: deps }, { data: rts }, { data: vhs }] = await Promise.all([
-      supabase.from("profiles").select("*").order("full_name"),
+      supabase.from("profiles").select("*").eq("is_employee", true).order("full_name"),
       supabase.from("departments").select("*").order("name"),
       supabase.from("routes").select("*").order("name"),
       supabase.from("vehicles").select("*").order("name"),

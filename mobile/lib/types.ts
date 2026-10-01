@@ -15,6 +15,7 @@ export type Profile = {
   notifications_viewed_at: string | null;
   terms_accepted_at: string | null;
   language: "no" | "en";
+  is_employee: boolean;
   created_at: string;
 };
 
