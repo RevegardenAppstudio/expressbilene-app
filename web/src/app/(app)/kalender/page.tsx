@@ -20,6 +20,7 @@ import {
 import ReasonDialog from "@/components/ReasonDialog";
 import { useToast } from "@/components/Toast";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { logAuditEvent } from "@/lib/auditLog";
 
 const TYPE_DOT: Record<string, string> = {
   sykdom_egenmelding: "bg-amber-500",
@@ -28,6 +29,18 @@ const TYPE_DOT: Record<string, string> = {
   ferie: "bg-sky-500",
   permisjon: "bg-purple-500",
   fri: "bg-green-500",
+};
+
+// Fyller hele feltet i månedsrutenettet med fargen til fraværstypen (i
+// stedet for bare en liten prikk), slik at typen er synlig uten å måtte
+// klikke inn på dagen -- se TYPE_DOT for samme fargefamilie som prikken.
+const TYPE_CHIP: Record<string, string> = {
+  sykdom_egenmelding: "bg-amber-100 text-amber-800",
+  sykdom_legemeldt: "bg-red-100 text-red-800",
+  sykt_barn: "bg-pink-100 text-pink-800",
+  ferie: "bg-sky-100 text-sky-800",
+  permisjon: "bg-purple-100 text-purple-800",
+  fri: "bg-green-100 text-green-800",
 };
 
 const SERVICE_DOT = "bg-orange-600";
@@ -69,6 +82,15 @@ export default function KalenderPage() {
   const [cancelRouteId, setCancelRouteId] = useState("");
   const [cancelNote, setCancelNote] = useState("");
   const [pendingRemoveCancellationId, setPendingRemoveCancellationId] = useState<string | null>(null);
+
+  const [editingAbsenceId, setEditingAbsenceId] = useState<string | null>(null);
+  const [editAbsenceType, setEditAbsenceType] = useState<AbsenceType>("sykdom_egenmelding");
+  const [editAbsenceStartDate, setEditAbsenceStartDate] = useState("");
+  const [editAbsenceEndDate, setEditAbsenceEndDate] = useState("");
+  const [editAbsenceNote, setEditAbsenceNote] = useState("");
+  const [editAbsenceError, setEditAbsenceError] = useState<string | null>(null);
+  const [pendingSaveAbsenceId, setPendingSaveAbsenceId] = useState<string | null>(null);
+  const [pendingDeleteAbsenceId, setPendingDeleteAbsenceId] = useState<string | null>(null);
 
   const grid = useMemo(() => buildMonthGrid(year, month), [year, month]);
   const gridStart = toIsoDate(grid[0]);
@@ -205,6 +227,90 @@ export default function KalenderPage() {
     setServiceNote("");
     setCancelRouteId("");
     setCancelNote("");
+    setEditingAbsenceId(null);
+    setEditAbsenceError(null);
+  }
+
+  function canManageAbsence(a: Absence) {
+    return isAdmin || (isModerator && !ADMIN_ONLY_ABSENCE_TYPES.includes(a.type));
+  }
+
+  function startEditAbsence(a: Absence) {
+    setEditingAbsenceId(a.id);
+    setEditAbsenceType(a.type);
+    setEditAbsenceStartDate(a.start_date);
+    setEditAbsenceEndDate(a.end_date);
+    setEditAbsenceNote(a.note ?? "");
+    setEditAbsenceError(null);
+  }
+
+  function cancelEditAbsence() {
+    setEditingAbsenceId(null);
+    setEditAbsenceError(null);
+  }
+
+  function requestSaveEditAbsence() {
+    if (editAbsenceEndDate < editAbsenceStartDate) {
+      setEditAbsenceError(t("timer.toBeforeFromError"));
+      return;
+    }
+    setEditAbsenceError(null);
+    setPendingSaveAbsenceId(editingAbsenceId);
+  }
+
+  async function confirmSaveEditAbsence(reason: string) {
+    const id = pendingSaveAbsenceId;
+    setPendingSaveAbsenceId(null);
+    if (!id) return;
+    const original = absences.find((a) => a.id === id);
+    const { error } = await supabase
+      .from("absences")
+      .update({
+        type: editAbsenceType,
+        start_date: editAbsenceStartDate,
+        end_date: editAbsenceEndDate,
+        note: editAbsenceNote.trim() || null,
+      })
+      .eq("id", id);
+    if (error) {
+      showToast(t("kalender.saveAbsenceFailed"), "error");
+      return;
+    }
+    await logAuditEvent(supabase, {
+      action: "absence.updated",
+      targetType: "absences",
+      targetId: id,
+      reason,
+      details: `${profiles[original?.user_id ?? ""]?.full_name ?? "?"}: ${
+        original ? t(`absenceType.${original.type}`) : "?"
+      } (${original?.start_date}–${original?.end_date}) → ${t(`absenceType.${editAbsenceType}`)} (${editAbsenceStartDate}–${editAbsenceEndDate})`,
+    });
+    setEditingAbsenceId(null);
+    showToast(t("kalender.absenceUpdated"));
+    await load();
+  }
+
+  async function confirmDeleteAbsence(reason: string) {
+    const id = pendingDeleteAbsenceId;
+    setPendingDeleteAbsenceId(null);
+    if (!id) return;
+    const original = absences.find((a) => a.id === id);
+    const { error } = await supabase.from("absences").delete().eq("id", id);
+    if (error) {
+      showToast(t("kalender.deleteAbsenceFailed"), "error");
+      return;
+    }
+    await logAuditEvent(supabase, {
+      action: "absence.deleted",
+      targetType: "absences",
+      targetId: id,
+      reason,
+      details: `${profiles[original?.user_id ?? ""]?.full_name ?? "?"}: ${
+        original ? t(`absenceType.${original.type}`) : "?"
+      } (${original?.start_date}–${original?.end_date})`,
+    });
+    showToast(t("kalender.absenceDeleted"));
+    await load();
   }
 
   async function handleAddAbsence() {
@@ -449,10 +555,9 @@ export default function KalenderPage() {
                     <div
                       key={a.id}
                       title={`${profiles[a.user_id]?.full_name ?? "?"} — ${t(`absenceType.${a.type}`)}`}
-                      className="flex items-center gap-1 truncate rounded bg-slate-50 px-1 py-0.5 text-[10px] text-slate-600"
+                      className={`truncate rounded px-1 py-0.5 text-[10px] font-medium ${TYPE_CHIP[a.type]}`}
                     >
-                      <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${TYPE_DOT[a.type]}`} />
-                      <span className="truncate">{profiles[a.user_id]?.full_name.split(" ")[0] ?? "?"}</span>
+                      {profiles[a.user_id]?.full_name.split(" ")[0] ?? "?"} {t(`absenceType.${a.type}`)}
                     </div>
                   ))}
                   {visibleAbsences.length > 3 && (
@@ -520,13 +625,91 @@ export default function KalenderPage() {
                     <div>
                       <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-slate-400">{t("kalender.absenceHeading")}</p>
                       <div className="space-y-1">
-                        {visibleAbsences.map((a) => (
-                          <div key={a.id} className="flex items-center gap-2 text-sm text-slate-700">
-                            <span className={`h-2 w-2 shrink-0 rounded-full ${TYPE_DOT[a.type]}`} />
-                            {profiles[a.user_id]?.full_name ?? t("kalender.unknown")}
-                            <span className="text-slate-400">— {t(`absenceType.${a.type}`)}</span>
-                          </div>
-                        ))}
+                        {visibleAbsences.map((a) =>
+                          editingAbsenceId === a.id ? (
+                            <div key={a.id} className="space-y-2 rounded-lg bg-slate-50 p-3">
+                              <p className="text-xs font-medium text-slate-600">
+                                {profiles[a.user_id]?.full_name ?? t("kalender.unknown")}
+                              </p>
+                              <select
+                                value={editAbsenceType}
+                                onChange={(e) => setEditAbsenceType(e.target.value as AbsenceType)}
+                                className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+                              >
+                                {(Object.keys(ABSENCE_TYPE_LABELS) as AbsenceType[])
+                                  .filter((value) => isAdmin || !ADMIN_ONLY_ABSENCE_TYPES.includes(value))
+                                  .map((value) => (
+                                    <option key={value} value={value}>
+                                      {t(`absenceType.${value}`)}
+                                    </option>
+                                  ))}
+                              </select>
+                              <div className="flex items-center gap-2">
+                                <label className="w-8 text-xs text-slate-500">{t("kalender.fromDate")}</label>
+                                <input
+                                  type="date"
+                                  value={editAbsenceStartDate}
+                                  onChange={(e) => setEditAbsenceStartDate(e.target.value)}
+                                  className="flex-1 rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+                                />
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <label className="w-8 text-xs text-slate-500">{t("kalender.toDate")}</label>
+                                <input
+                                  type="date"
+                                  min={editAbsenceStartDate}
+                                  value={editAbsenceEndDate}
+                                  onChange={(e) => setEditAbsenceEndDate(e.target.value)}
+                                  className="flex-1 rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+                                />
+                              </div>
+                              <input
+                                type="text"
+                                value={editAbsenceNote}
+                                onChange={(e) => setEditAbsenceNote(e.target.value)}
+                                placeholder={t("sammendrag.noteOptional")}
+                                className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+                              />
+                              {editAbsenceError && <p className="text-xs text-red-600">{editAbsenceError}</p>}
+                              <div className="flex justify-end gap-2">
+                                <button
+                                  onClick={cancelEditAbsence}
+                                  className="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100"
+                                >
+                                  {t("reasonDialog.cancel")}
+                                </button>
+                                <button
+                                  onClick={requestSaveEditAbsence}
+                                  className="rounded-md bg-brand px-3 py-1.5 text-xs font-semibold text-black hover:brightness-90"
+                                >
+                                  {t("common.save")}
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div key={a.id} className="flex items-center gap-2 text-sm text-slate-700">
+                              <span className={`h-2 w-2 shrink-0 rounded-full ${TYPE_DOT[a.type]}`} />
+                              {profiles[a.user_id]?.full_name ?? t("kalender.unknown")}
+                              <span className="text-slate-400">— {t(`absenceType.${a.type}`)}</span>
+                              {canManageAbsence(a) && (
+                                <span className="ml-auto flex shrink-0 gap-2">
+                                  <button
+                                    onClick={() => startEditAbsence(a)}
+                                    className="text-xs text-slate-400 hover:text-brand-dark"
+                                  >
+                                    {t("common.edit")}
+                                  </button>
+                                  <button
+                                    onClick={() => setPendingDeleteAbsenceId(a.id)}
+                                    className="text-xs text-slate-400 hover:text-red-600"
+                                  >
+                                    {t("common.delete")}
+                                  </button>
+                                </span>
+                              )}
+                            </div>
+                          )
+                        )}
                       </div>
                     </div>
                   )}
@@ -733,6 +916,26 @@ export default function KalenderPage() {
           danger
           onConfirm={confirmRemoveCancellation}
           onCancel={() => setPendingRemoveCancellationId(null)}
+        />
+      )}
+
+      {pendingSaveAbsenceId && (
+        <ReasonDialog
+          title={t("kalender.saveAbsenceTitle")}
+          confirmLabel={t("common.save")}
+          requireReason
+          onConfirm={confirmSaveEditAbsence}
+          onCancel={() => setPendingSaveAbsenceId(null)}
+        />
+      )}
+
+      {pendingDeleteAbsenceId && (
+        <ReasonDialog
+          title={t("kalender.deleteAbsenceTitle")}
+          confirmLabel={t("common.delete")}
+          danger
+          onConfirm={confirmDeleteAbsence}
+          onCancel={() => setPendingDeleteAbsenceId(null)}
         />
       )}
     </div>
