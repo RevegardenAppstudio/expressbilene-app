@@ -39,7 +39,7 @@ const no = {
   },
   timer: {
     title: "Registrer timer",
-    weekAndMonth: "Denne uken: {{week}} t. Denne måneden: {{month}} t.",
+    thisWeek: "Denne uken: {{week}} t.",
     route: "Rute",
     routeSelect: "Velg rute",
     date: "Dato",
@@ -215,6 +215,9 @@ const no = {
   oversikt: {
     title: "Oversikt",
     subtitle: "Dine timer og fravær",
+    period: "Periode",
+    wageHours: "Lønnstimer",
+    overtimeHours: "Overtid",
     vacationDaysUsed: "Du har brukt {{used}} av {{quota}} feriedager i {{year}}.",
     myAbsences: "Mitt fravær",
     noAbsences: "Ingen fravær registrert ennå.",
@@ -323,7 +326,7 @@ const en: typeof no = {
   },
   timer: {
     title: "Log time",
-    weekAndMonth: "This week: {{week}} h. This month: {{month}} h.",
+    thisWeek: "This week: {{week}} h.",
     route: "Route",
     routeSelect: "Select route",
     date: "Date",
@@ -499,6 +502,9 @@ const en: typeof no = {
   oversikt: {
     title: "Overview",
     subtitle: "Your hours and absences",
+    period: "Period",
+    wageHours: "Wage hours",
+    overtimeHours: "Overtime",
     vacationDaysUsed: "You've used {{used}} of {{quota}} vacation days in {{year}}.",
     myAbsences: "My absences",
     noAbsences: "No absences recorded yet.",

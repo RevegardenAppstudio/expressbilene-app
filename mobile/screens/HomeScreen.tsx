@@ -39,11 +39,6 @@ function startOfWeekIso() {
   return toIsoDate(monday);
 }
 
-function startOfMonthIso() {
-  const now = new Date();
-  return toIsoDate(new Date(now.getFullYear(), now.getMonth(), 1));
-}
-
 type Mode = "punch" | "times";
 
 const PAGE_SIZE = 10;
@@ -57,7 +52,6 @@ export default function HomeScreen({ userId, profile }: { userId: string; profil
   const [hasMoreEntries, setHasMoreEntries] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [weekTotal, setWeekTotal] = useState(0);
-  const [monthTotal, setMonthTotal] = useState(0);
   const [openPunch, setOpenPunch] = useState<TimeEntry | null>(null);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [routes, setRoutes] = useState<Route[]>([]);
@@ -105,10 +99,9 @@ export default function HomeScreen({ userId, profile }: { userId: string; profil
   const todayIsBusinessDay = isBusinessDay(new Date());
 
   const loadEntries = useCallback(async () => {
-    const monthStart = startOfMonthIso();
     const weekStart = startOfWeekIso();
 
-    const [{ data: page }, { data: monthData }, { data: deps }, { data: rts }, { data: vhs }, { data: bookingData }] = await Promise.all([
+    const [{ data: page }, { data: weekData }, { data: deps }, { data: rts }, { data: vhs }, { data: bookingData }] = await Promise.all([
       supabase
         .from("time_entries")
         .select("*")
@@ -116,7 +109,7 @@ export default function HomeScreen({ userId, profile }: { userId: string; profil
         .order("entry_date", { ascending: false })
         .order("created_at", { ascending: false })
         .range(0, PAGE_SIZE),
-      supabase.from("time_entries").select("entry_date, hours").eq("user_id", userId).gte("entry_date", monthStart),
+      supabase.from("time_entries").select("entry_date, hours").eq("user_id", userId).gte("entry_date", weekStart),
       supabase.from("departments").select("*").order("name"),
       supabase.from("routes").select("*").order("name"),
       supabase.from("vehicles").select("*").order("name"),
@@ -127,16 +120,12 @@ export default function HomeScreen({ userId, profile }: { userId: string; profil
       setHasMoreEntries(page.length > PAGE_SIZE);
       setOpenPunch((page as TimeEntry[]).find((e) => e.clock_in && !e.clock_out) ?? null);
     }
-    if (monthData) {
+    if (weekData) {
       let week = 0;
-      let month = 0;
-      for (const e of monthData as { entry_date: string; hours: number | null }[]) {
-        const h = Number(e.hours ?? 0);
-        month += h;
-        if (e.entry_date >= weekStart) week += h;
+      for (const e of weekData as { entry_date: string; hours: number | null }[]) {
+        week += Number(e.hours ?? 0);
       }
       setWeekTotal(week);
-      setMonthTotal(month);
     }
     if (deps) setDepartments(deps as Department[]);
     if (rts) setRoutes(rts as Route[]);
@@ -370,9 +359,7 @@ export default function HomeScreen({ userId, profile }: { userId: string; profil
       ListHeaderComponent={
         <View>
           <Text style={styles.title}>{t("timer.title")}</Text>
-          <Text style={styles.subtitle}>
-            {t("timer.weekAndMonth", { week: weekTotal.toFixed(1), month: monthTotal.toFixed(1) })}
-          </Text>
+          <Text style={styles.subtitle}>{t("timer.thisWeek", { week: weekTotal.toFixed(1) })}</Text>
 
           <View style={styles.card}>
             {myDepartmentId ? (

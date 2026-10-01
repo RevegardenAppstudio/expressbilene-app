@@ -540,8 +540,7 @@ export default function KalenderScreen({ userId, profile }: { userId: string; pr
             const dayAbsences = absencesForDay(iso);
             const dayServices = servicesForDay(iso);
             const dayCancellations = cancellationsForDay(iso);
-            const dayActive = iso === todayIso ? activeNow : [];
-            const hasContent = dayActive.length > 0 || dayAbsences.length > 0 || dayServices.length > 0 || dayCancellations.length > 0;
+            const hasContent = dayAbsences.length > 0 || dayServices.length > 0 || dayCancellations.length > 0;
             const isToday = iso === todayIso;
             const isAdding = activeAddDayIso === iso;
             return (
@@ -553,12 +552,6 @@ export default function KalenderScreen({ userId, profile }: { userId: string; pr
                   <Text style={styles.dayCardEmpty}>{t("kalender.noEntriesForDay")}</Text>
                 ) : (
                   <View style={{ gap: 4 }}>
-                    {dayActive.map((e) => (
-                      <View key={`active-${e.id}`} style={styles.sectionRow}>
-                        <View style={styles.liveDotSmall} />
-                        <Text style={styles.sectionRowText}>{profiles[e.user_id]?.full_name ?? "?"}</Text>
-                      </View>
-                    ))}
                     {dayAbsences.map((a) =>
                       editingAbsenceId === a.id ? (
                         <View key={a.id} style={styles.editAbsenceCard}>
