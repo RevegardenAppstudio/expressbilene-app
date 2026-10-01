@@ -331,36 +331,21 @@ export default function KalenderPage() {
     }
     setSaving(true);
     setFormError(null);
-    const { data: inserted, error } = await supabase
-      .from("absences")
-      .insert({
-        user_id: absenceEmployeeId,
-        type: absenceType,
-        start_date: selectedDayIso,
-        end_date: absenceEndDate,
-        note: absenceNote.trim() || null,
-      })
-      .select("id, type")
-      .single();
+    // Godkjennes automatisk av databasen siden admin/moderator legger den
+    // til direkte (se handle_absence_insert() i schema.sql).
+    const { error } = await supabase.from("absences").insert({
+      user_id: absenceEmployeeId,
+      type: absenceType,
+      start_date: selectedDayIso,
+      end_date: absenceEndDate,
+      note: absenceNote.trim() || null,
+    });
 
-    if (error || !inserted) {
+    if (error) {
       setSaving(false);
       setFormError(t("kalender.addAbsenceFailed"));
       showToast(t("kalender.addAbsenceFailed"), "error");
       return;
-    }
-
-    // Ferie/permisjon/fri settes til "venter" av databasen -- siden en
-    // admin/moderator legger dette til direkte, godkjenner vi det med det
-    // samme (samme mønster som Sammendrag-siden).
-    if (inserted.type === "ferie" || inserted.type === "permisjon" || inserted.type === "fri") {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      await supabase
-        .from("absences")
-        .update({ status: "godkjent", decided_by: user?.id ?? null, decided_at: new Date().toISOString() })
-        .eq("id", inserted.id);
     }
 
     setSaving(false);

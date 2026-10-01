@@ -18,7 +18,6 @@ export default function NavBar({ profile }: { profile: Profile }) {
 
   const DRIVER_ONLY_LINKS = [
     { href: "/timer", label: t("nav.timer") },
-    { href: "/fravaer", label: t("nav.fravaer") },
     { href: "/hendelser", label: t("nav.hendelser") },
   ];
   const COMMON_LINKS = [{ href: "/sammendrag", label: t("nav.oversikt") }];

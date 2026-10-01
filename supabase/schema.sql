@@ -435,12 +435,15 @@ create table if not exists public.absences (
 );
 alter table public.absences enable row level security;
 
--- Egenmelding og sykt barn krever manuell godkjenning (status = 'venter'),
--- akkurat som ferie/permisjon -- men får likevel 8 timer/dag automatisk hvis
--- ikke annet er satt, UANSETT om det kommer fra hurtigknappen eller det
--- vanlige skjemaet (styres av type, ikke av hvordan raden ble opprettet).
--- Sykemelding (legeerklært) forblir automatisk godkjent siden kun admin kan
--- registrere den i utgangspunktet (jf. absence_type_requires_admin under).
+-- Når admin/moderator registrerer fravær direkte (Kalender/Oversikt -- den
+-- eneste veien på web nå som selvbetjeningssiden er fjernet, se README),
+-- er det ikke en "søknad" som trenger godkjenning -- stab ER avgjørelsen,
+-- så den godkjennes med det samme på innsetting.
+--
+-- Selvbetjening (fortsatt i mobilappen inntil den også oppdateres) settes
+-- fortsatt til 'venter' som før -- egenmelding/sykt barn krever fortsatt
+-- manuell oppfølging fra stab når en sjåfør sender det inn selv. Får
+-- likevel 8 timer/dag automatisk hvis ikke annet er satt, uansett status.
 create or replace function public.handle_absence_insert()
 returns trigger language plpgsql set search_path = public as $$
 begin
@@ -448,10 +451,10 @@ begin
     new.hours = coalesce(new.hours, 8);
   end if;
 
-  if new.type = 'sykdom_legemeldt' then
+  if public.can_manage_user(new.user_id) then
     new.status = 'godkjent';
+    new.decided_by = auth.uid();
     new.decided_at = now();
-    new.decided_by = null;
   else
     new.status = 'venter';
     new.decided_at = null;
@@ -554,74 +557,6 @@ $$;
 create trigger trg_absence_decision before update on public.absences
   for each row execute procedure public.handle_absence_decision();
 
--- Hovedregelen for egenmelding (uten IA-avtale): maks 3 sammenhengende dager
--- per periode, og maks 4 perioder i lopet av siste 12 maneder. Blokkerer
--- IKKE registreringen -- sender et eget varsel til stab (type
--- 'egenmelding_grense') om at grensen er naadd/oversteget, til oppfolging.
-create or replace function public.notify_on_egenmelding_limit()
-returns trigger language plpgsql security definer set search_path = public as $$
-declare
-  reporter_name text;
-  period_count integer;
-  current_period_len integer;
-begin
-  if new.type <> 'sykdom_egenmelding' then
-    return new;
-  end if;
-
-  with all_ranges as (
-    select start_date, end_date
-    from public.absences
-    where user_id = new.user_id and type = 'sykdom_egenmelding' and status = 'godkjent'
-      and start_date >= (new.end_date - interval '365 days')::date and id <> new.id
-    union all
-    select new.start_date, new.end_date
-  ),
-  ordered as (
-    select start_date, end_date, lag(end_date) over (order by start_date) as prev_end
-    from all_ranges
-  ),
-  flagged as (
-    select start_date, end_date,
-      case when prev_end is null or start_date > prev_end + 1 then 1 else 0 end as new_group
-    from ordered
-  ),
-  grouped_rows as (
-    select start_date, end_date, sum(new_group) over (order by start_date) as grp
-    from flagged
-  ),
-  periods as (
-    select grp, min(start_date) as period_start, max(end_date) as period_end
-    from grouped_rows group by grp
-  )
-  select count(*),
-    max(period_end - period_start + 1) filter (
-      where new.start_date between period_start and period_end
-         or new.end_date between period_start and period_end
-    )
-  into period_count, current_period_len
-  from periods;
-
-  if period_count > 4 or coalesce(current_period_len, 0) > 3 then
-    select full_name into reporter_name from public.profiles where id = new.user_id;
-    insert into public.notifications (type, title, body, related_table, related_id, created_by)
-    values (
-      'egenmelding_grense',
-      reporter_name || ' har brukt opp egenmeldingsdagene',
-      case
-        when coalesce(current_period_len, 0) > 3 then 'Denne egenmeldingsperioden er ' || current_period_len || ' dager (maks 3 sammenhengende dager uten legeerklæring).'
-        else 'Dette er egenmeldingsperiode nummer ' || period_count || ' siste 12 måneder (maks 4). Vurder å be om legeerklæring fremover.'
-      end,
-      'absences', new.id, new.user_id
-    );
-  end if;
-
-  return new;
-end;
-$$;
-create trigger trg_notify_egenmelding_limit after insert on public.absences
-  for each row execute procedure public.notify_on_egenmelding_limit();
-
 -- vacation_days_used(): summerer overlappende dager mellom hver 'ferie'-søknad
 -- (venter/godkjent) og et gitt kalenderår, for kvotevisning i UI. Kjører med
 -- kallerens egne RLS-rettigheter (ikke security definer) -- ansatte ser bare
@@ -644,12 +579,12 @@ $$;
 grant execute on function public.vacation_days_used(uuid, int) to authenticated;
 
 -- Lar den ansatte selv se hvor mange egenmeldingsperioder de har brukt siste
--- 12 måneder, samme grense som notify_on_egenmelding_limit() varsler stab om
--- (maks 4 perioder, maks 3 sammenhengende dager uten legeerklæring). Kjører
--- med kallerens egne RLS-rettigheter -- ansatte ser bare sitt eget forbruk,
--- admin/moderator kan slå opp andres siden de uansett har tilgang via
--- can_manage_user. Grupperer sammenhengende/overlappende perioder likt som
--- varsel-triggeren, men uten å inkludere en ny (ikke-innsendt) rad.
+-- 12 måneder (maks 4 perioder, maks 3 sammenhengende dager uten
+-- legeerklæring er hovedregelen uten IA-avtale). Kjører med kallerens egne
+-- RLS-rettigheter -- ansatte ser bare sitt eget forbruk, admin/moderator kan
+-- slå opp andres siden de uansett har tilgang via can_manage_user.
+-- Grupperer sammenhengende/overlappende perioder, uten å inkludere en ny
+-- (ikke-innsendt) rad. Brukes av mobilappens selvbetjeningsskjema.
 create or replace function public.egenmelding_usage(p_user_id uuid)
 returns table(period_count integer, longest_period_days integer)
 language sql stable security invoker set search_path = public as $$
@@ -808,24 +743,6 @@ create policy "Stab kan lese varsler" on public.notifications for select to auth
 create policy "Stab kan arkivere varsler" on public.notifications for update to authenticated
   using (public.is_admin() or public.can_manage_user(created_by))
   with check (public.is_admin() or public.can_manage_user(created_by));
-
-create or replace function public.notify_on_sick_absence()
-returns trigger language plpgsql security definer set search_path = public as $$
-declare reporter_name text;
-begin
-  if new.type in ('sykdom_egenmelding', 'sykdom_legemeldt', 'sykt_barn') then
-    select full_name into reporter_name from public.profiles where id = new.user_id;
-    insert into public.notifications (type, title, body, related_table, related_id, created_by)
-    values ('sykdom', reporter_name || ' har meldt sykdag',
-      case new.type when 'sykt_barn' then 'Sykt barn' when 'sykdom_legemeldt' then 'Sykemelding' else 'Sykdom (egenmelding)' end
-        || ' fra ' || to_char(new.start_date, 'DD.MM.YYYY') || ' til ' || to_char(new.end_date, 'DD.MM.YYYY'),
-      'absences', new.id, new.user_id);
-  end if;
-  return new;
-end;
-$$;
-create trigger trg_notify_sick_absence after insert on public.absences
-  for each row execute procedure public.notify_on_sick_absence();
 
 create or replace function public.notify_on_event()
 returns trigger language plpgsql security definer set search_path = public as $$
@@ -993,9 +910,7 @@ revoke execute on function public.is_admin() from public;
 revoke execute on function public.is_staff() from public;
 revoke execute on function public.vehicle_is_in_use(uuid) from public;
 revoke execute on function public.handle_new_user() from public;
-revoke execute on function public.notify_on_egenmelding_limit() from public;
 revoke execute on function public.notify_on_event() from public;
-revoke execute on function public.notify_on_sick_absence() from public;
 revoke execute on function public.notify_service_reminders() from public;
 revoke execute on function public.trigger_push_on_notification() from public;
 revoke execute on function public.prevent_sjafor_clock_in_edit() from public;

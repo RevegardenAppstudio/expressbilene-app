@@ -230,38 +230,22 @@ export default function SammendragPage() {
       return;
     }
     setSaving(true);
-    const { data: inserted, error } = await supabase
-      .from("absences")
-      .insert({
-        user_id: selectedUserId,
-        type: newAbsenceType,
-        start_date: newAbsenceStart,
-        end_date: newAbsenceEnd,
-        note: newAbsenceNote.trim() || null,
-      })
-      .select("id, type")
-      .single();
+    // Godkjennes automatisk av databasen siden admin/moderator legger den
+    // til direkte (se handle_absence_insert() i schema.sql).
+    const { error } = await supabase.from("absences").insert({
+      user_id: selectedUserId,
+      type: newAbsenceType,
+      start_date: newAbsenceStart,
+      end_date: newAbsenceEnd,
+      note: newAbsenceNote.trim() || null,
+    });
 
-    if (error || !inserted) {
+    if (error) {
       setSaving(false);
-      const msg = error?.message.includes("duplicate_absence") ? t("fravaer.overlapError") : t("sammendrag.addAbsenceFailed");
+      const msg = error.message.includes("duplicate_absence") ? t("fravaer.overlapError") : t("sammendrag.addAbsenceFailed");
       setFormError(msg);
       showToast(msg, "error");
       return;
-    }
-
-    // Sykdomstyper godkjennes automatisk av databasen. Ferie/permisjon/fri
-    // settes til "venter" av samme trigger som selvbetjeningsskjemaet bruker
-    // -- siden en admin/moderator legger dette til direkte, godkjenner vi
-    // det med det samme.
-    if (inserted.type === "ferie" || inserted.type === "permisjon" || inserted.type === "fri") {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      await supabase
-        .from("absences")
-        .update({ status: "godkjent", decided_by: user?.id ?? null, decided_at: new Date().toISOString() })
-        .eq("id", inserted.id);
     }
 
     setSaving(false);
