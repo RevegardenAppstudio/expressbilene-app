@@ -8,7 +8,7 @@ import LoginScreen from "./screens/LoginScreen";
 import GlemtPassordScreen from "./screens/GlemtPassordScreen";
 import AcceptTermsScreen from "./screens/AcceptTermsScreen";
 import HomeScreen from "./screens/HomeScreen";
-import FravaerScreen from "./screens/FravaerScreen";
+import OversiktScreen from "./screens/OversiktScreen";
 import HendelserScreen from "./screens/HendelserScreen";
 import MoreMenuScreen, { MoreSubScreen } from "./screens/MoreMenuScreen";
 import { ThemeProvider, useTheme } from "./theme/ThemeContext";
@@ -17,7 +17,7 @@ import { registerPushToken } from "./lib/notifications";
 import { LanguageProvider, useLanguage } from "./lib/i18n/LanguageContext";
 import { Profile } from "./lib/types";
 
-type Tab = "home" | "fravaer" | "hendelser" | "innstillinger";
+type Tab = "home" | "oversikt" | "hendelser" | "innstillinger";
 
 function isReminderIdentifier(identifier: string) {
   return identifier.startsWith("reminder-clock-in") || identifier.startsWith("reminder-clock-out");
@@ -165,7 +165,7 @@ function AppScreens({
 
   const tabs: { key: Tab; label: string }[] = [
     { key: "home", label: t("tabs.home") },
-    { key: "fravaer", label: t("tabs.fravaer") },
+    { key: "oversikt", label: t("tabs.oversikt") },
     { key: "hendelser", label: t("tabs.hendelser") },
     { key: "innstillinger", label: t("tabs.more") },
   ];
@@ -176,8 +176,8 @@ function AppScreens({
       <View style={{ flex: 1 }}>
         {tab === "home" ? (
           <HomeScreen userId={session.user.id} profile={profile} />
-        ) : tab === "fravaer" ? (
-          <FravaerScreen userId={session.user.id} profile={profile} />
+        ) : tab === "oversikt" ? (
+          <OversiktScreen userId={session.user.id} profile={profile} />
         ) : tab === "hendelser" ? (
           <HendelserScreen userId={session.user.id} profile={profile} />
         ) : (

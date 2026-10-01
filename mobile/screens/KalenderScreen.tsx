@@ -23,17 +23,38 @@ import {
 } from "../lib/types";
 import { useLanguage } from "../lib/i18n/LanguageContext";
 
+// Speiler web sin kalenderside: "Fri" er grønn, innstilte ruter er grå.
 const TYPE_DOT: Record<string, string> = {
   sykdom_egenmelding: "#F59E0B",
   sykdom_legemeldt: "#EF4444",
   sykt_barn: "#EC4899",
   ferie: "#0EA5E9",
   permisjon: "#A855F7",
-  fri: "#94A3B8",
+  fri: "#22C55E",
 };
 const SERVICE_DOT = "#EA580C";
-const CANCEL_DOT = "#E11D48";
+const CANCEL_DOT = "#64748B";
 const ACTIVE_COLLAPSED_LIMIT = 5;
+
+// Fyller hele feltet for fraværstypen med farge (ikke bare en prikk), slik
+// at typen er synlig uten å måtte åpne redigeringen -- samme fargefamilie
+// som TYPE_DOT, bare lysere bakgrunn/mørkere tekst for lesbarhet.
+const TYPE_CHIP_BG: Record<string, string> = {
+  sykdom_egenmelding: "#FEF3C7",
+  sykdom_legemeldt: "#FEE2E2",
+  sykt_barn: "#FCE7F3",
+  ferie: "#E0F2FE",
+  permisjon: "#F3E8FF",
+  fri: "#DCFCE7",
+};
+const TYPE_CHIP_TEXT: Record<string, string> = {
+  sykdom_egenmelding: "#92400E",
+  sykdom_legemeldt: "#991B1B",
+  sykt_barn: "#9D174D",
+  ferie: "#075985",
+  permisjon: "#6B21A8",
+  fri: "#166534",
+};
 
 type AddMode = "fravaer" | "verksted" | "innstill" | null;
 
@@ -60,7 +81,8 @@ export default function KalenderScreen({ userId, profile }: { userId: string; pr
   const { language, t } = useLanguage();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const isAdmin = profile?.role === "admin";
-  const isStaff = isAdmin || profile?.role === "moderator";
+  const isModerator = profile?.role === "moderator";
+  const isStaff = isAdmin || isModerator;
   const availableAbsenceTypes = isAdmin ? ABSENCE_TYPES : ABSENCE_TYPES.filter((v) => !ADMIN_ONLY_ABSENCE_TYPES.includes(v));
 
   const now = new Date();
@@ -120,6 +142,15 @@ export default function KalenderScreen({ userId, profile }: { userId: string; pr
   const [cancelRouteId, setCancelRouteId] = useState("");
   const [cancelNote, setCancelNote] = useState("");
   const [pendingRemoveCancellationId, setPendingRemoveCancellationId] = useState<string | null>(null);
+
+  const [editingAbsenceId, setEditingAbsenceId] = useState<string | null>(null);
+  const [editAbsenceType, setEditAbsenceType] = useState<AbsenceType>("sykdom_egenmelding");
+  const [editAbsenceStartDate, setEditAbsenceStartDate] = useState(new Date());
+  const [editAbsenceEndDate, setEditAbsenceEndDate] = useState(new Date());
+  const [editAbsenceNote, setEditAbsenceNote] = useState("");
+  const [editAbsenceError, setEditAbsenceError] = useState<string | null>(null);
+  const [pendingSaveAbsenceId, setPendingSaveAbsenceId] = useState<string | null>(null);
+  const [pendingDeleteAbsenceId, setPendingDeleteAbsenceId] = useState<string | null>(null);
 
   const loadActive = useCallback(async () => {
     const { data } = await supabase.from("time_entries").select("*").not("clock_in", "is", null).is("clock_out", null);
@@ -245,7 +276,6 @@ export default function KalenderScreen({ userId, profile }: { userId: string; pr
     setFormError(null);
     const { error } = await insertStaffAbsence({
       userId: absenceEmployeeId,
-      decidedBy: userId,
       type: absenceType,
       startDate: activeAddDayIso,
       endDate: endIso,
@@ -316,6 +346,87 @@ export default function KalenderScreen({ userId, profile }: { userId: string; pr
     if (!id) return;
     const { error } = await supabase.from("route_cancellations").delete().eq("id", id);
     if (!error) load();
+  }
+
+  function canManageAbsence(a: Absence) {
+    return isAdmin || (isModerator && !ADMIN_ONLY_ABSENCE_TYPES.includes(a.type));
+  }
+
+  function startEditAbsence(a: Absence) {
+    setEditingAbsenceId(a.id);
+    setEditAbsenceType(a.type);
+    setEditAbsenceStartDate(new Date(a.start_date + "T00:00:00"));
+    setEditAbsenceEndDate(new Date(a.end_date + "T00:00:00"));
+    setEditAbsenceNote(a.note ?? "");
+    setEditAbsenceError(null);
+  }
+
+  function cancelEditAbsence() {
+    setEditingAbsenceId(null);
+    setEditAbsenceError(null);
+  }
+
+  function requestSaveEditAbsence() {
+    if (toIsoDate(editAbsenceEndDate) < toIsoDate(editAbsenceStartDate)) {
+      setEditAbsenceError(t("timer.toBeforeFromError"));
+      return;
+    }
+    setEditAbsenceError(null);
+    setPendingSaveAbsenceId(editingAbsenceId);
+  }
+
+  async function confirmSaveEditAbsence(reason: string) {
+    const id = pendingSaveAbsenceId;
+    setPendingSaveAbsenceId(null);
+    if (!id) return;
+    const original = absences.find((a) => a.id === id);
+    const { error } = await supabase
+      .from("absences")
+      .update({
+        type: editAbsenceType,
+        start_date: toIsoDate(editAbsenceStartDate),
+        end_date: toIsoDate(editAbsenceEndDate),
+        note: editAbsenceNote.trim() || null,
+      })
+      .eq("id", id);
+    if (error) {
+      setEditAbsenceError(t("kalender.saveAbsenceFailed"));
+      return;
+    }
+    await supabase.from("audit_log").insert({
+      actor_id: userId,
+      action: "absence.updated",
+      target_type: "absences",
+      target_id: id,
+      reason: reason || null,
+      details: `${profiles[original?.user_id ?? ""]?.full_name ?? "?"}: ${
+        original ? t(`absenceType.${original.type}`) : "?"
+      } (${original?.start_date}–${original?.end_date}) → ${t(`absenceType.${editAbsenceType}`)} (${toIsoDate(
+        editAbsenceStartDate
+      )}–${toIsoDate(editAbsenceEndDate)})`,
+    });
+    setEditingAbsenceId(null);
+    load();
+  }
+
+  async function confirmDeleteAbsence(reason: string) {
+    const id = pendingDeleteAbsenceId;
+    setPendingDeleteAbsenceId(null);
+    if (!id) return;
+    const original = absences.find((a) => a.id === id);
+    const { error } = await supabase.from("absences").delete().eq("id", id);
+    if (error) return;
+    await supabase.from("audit_log").insert({
+      actor_id: userId,
+      action: "absence.deleted",
+      target_type: "absences",
+      target_id: id,
+      reason: reason || null,
+      details: `${profiles[original?.user_id ?? ""]?.full_name ?? "?"}: ${
+        original ? t(`absenceType.${original.type}`) : "?"
+      } (${original?.start_date}–${original?.end_date})`,
+    });
+    load();
   }
 
   const employeesForFilter = departmentFilter
@@ -448,14 +559,75 @@ export default function KalenderScreen({ userId, profile }: { userId: string; pr
                         <Text style={styles.sectionRowText}>{profiles[e.user_id]?.full_name ?? "?"}</Text>
                       </View>
                     ))}
-                    {dayAbsences.map((a) => (
-                      <View key={a.id} style={styles.sectionRow}>
-                        <View style={[styles.smallDot, { backgroundColor: TYPE_DOT[a.type] ?? colors.textMuted }]} />
-                        <Text style={styles.sectionRowText}>
-                          {profiles[a.user_id]?.full_name ?? "?"} — {t(`absenceType.${a.type as AbsenceType}`)}
-                        </Text>
-                      </View>
-                    ))}
+                    {dayAbsences.map((a) =>
+                      editingAbsenceId === a.id ? (
+                        <View key={a.id} style={styles.editAbsenceCard}>
+                          <Text style={styles.editAbsenceName}>{profiles[a.user_id]?.full_name ?? "?"}</Text>
+                          <View style={styles.typeRow}>
+                            {(isAdmin ? ABSENCE_TYPES : ABSENCE_TYPES.filter((v) => !ADMIN_ONLY_ABSENCE_TYPES.includes(v))).map((tp) => (
+                              <TouchableOpacity
+                                key={tp}
+                                onPress={() => setEditAbsenceType(tp)}
+                                style={[styles.typeChip, editAbsenceType === tp && styles.typeChipActive]}
+                              >
+                                <Text style={[styles.typeChipText, editAbsenceType === tp && styles.typeChipTextActive]}>
+                                  {t(`absenceType.${tp}`)}
+                                </Text>
+                              </TouchableOpacity>
+                            ))}
+                          </View>
+                          <PickerField
+                            label={t("fravaer.from")}
+                            value={editAbsenceStartDate}
+                            mode="date"
+                            onChange={setEditAbsenceStartDate}
+                          />
+                          <PickerField
+                            label={t("kalender.toDate")}
+                            value={editAbsenceEndDate}
+                            mode="date"
+                            onChange={setEditAbsenceEndDate}
+                          />
+                          <TextInput
+                            style={styles.input}
+                            value={editAbsenceNote}
+                            onChangeText={setEditAbsenceNote}
+                            placeholder={t("timer.noteOptional")}
+                            placeholderTextColor={colors.textMuted}
+                          />
+                          {editAbsenceError ? <Text style={styles.error}>{editAbsenceError}</Text> : null}
+                          <View style={styles.editAbsenceButtonRow}>
+                            <TouchableOpacity style={styles.editAbsenceCancelBtn} onPress={cancelEditAbsence}>
+                              <Text style={styles.editAbsenceCancelText}>{t("common.cancel")}</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.addSubmitBtn} onPress={requestSaveEditAbsence}>
+                              <Text style={styles.addSubmitText}>{t("common.save")}</Text>
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      ) : (
+                        <View key={a.id} style={styles.absenceRow}>
+                          <View style={[styles.absenceChip, { backgroundColor: TYPE_CHIP_BG[a.type] ?? colors.card }]}>
+                            <Text
+                              style={[styles.absenceChipText, { color: TYPE_CHIP_TEXT[a.type] ?? colors.text }]}
+                              numberOfLines={1}
+                            >
+                              {profiles[a.user_id]?.full_name ?? "?"} — {t(`absenceType.${a.type as AbsenceType}`)}
+                            </Text>
+                          </View>
+                          {canManageAbsence(a) && (
+                            <View style={styles.absenceActions}>
+                              <TouchableOpacity onPress={() => startEditAbsence(a)}>
+                                <Text style={styles.actionText}>{t("common.edit")}</Text>
+                              </TouchableOpacity>
+                              <TouchableOpacity onPress={() => setPendingDeleteAbsenceId(a.id)}>
+                                <Text style={styles.actionTextDanger}>{t("common.delete")}</Text>
+                              </TouchableOpacity>
+                            </View>
+                          )}
+                        </View>
+                      )
+                    )}
                     {dayServices.map((b) => (
                       <View key={b.id} style={styles.sectionRow}>
                         <View style={[styles.smallDot, { backgroundColor: SERVICE_DOT }]} />
@@ -632,6 +804,26 @@ export default function KalenderScreen({ userId, profile }: { userId: string; pr
           onCancel={() => setPendingRemoveCancellationId(null)}
         />
       )}
+
+      {pendingSaveAbsenceId && (
+        <ReasonDialog
+          title={t("kalender.saveAbsenceTitle")}
+          confirmLabel={t("common.save")}
+          requireReason
+          onConfirm={confirmSaveEditAbsence}
+          onCancel={() => setPendingSaveAbsenceId(null)}
+        />
+      )}
+
+      {pendingDeleteAbsenceId && (
+        <ReasonDialog
+          title={t("kalender.deleteAbsenceTitle")}
+          confirmLabel={t("common.delete")}
+          danger
+          onConfirm={confirmDeleteAbsence}
+          onCancel={() => setPendingDeleteAbsenceId(null)}
+        />
+      )}
     </>
   );
 }
@@ -701,6 +893,17 @@ function createStyles(colors: ThemeColors) {
     sectionRowText: { fontSize: 13, color: colors.text, flex: 1 },
     smallDot: { width: 8, height: 8, borderRadius: 4 },
     removeText: { fontSize: 11, color: colors.textMuted },
+    absenceRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 2 },
+    absenceChip: { flex: 1, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 },
+    absenceChipText: { fontSize: 12.5, fontWeight: "600" },
+    absenceActions: { flexDirection: "row", gap: 10, flexShrink: 0 },
+    actionText: { fontSize: 11.5, color: colors.primary, fontWeight: "600" },
+    actionTextDanger: { fontSize: 11.5, color: colors.danger, fontWeight: "600" },
+    editAbsenceCard: { backgroundColor: colors.inputBg, borderRadius: 10, padding: 10, marginVertical: 4 },
+    editAbsenceName: { fontSize: 12.5, fontWeight: "600", color: colors.text, marginBottom: 6 },
+    editAbsenceButtonRow: { flexDirection: "row", justifyContent: "flex-end", gap: 8, marginTop: 10 },
+    editAbsenceCancelBtn: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, paddingVertical: 8, paddingHorizontal: 14 },
+    editAbsenceCancelText: { fontSize: 13, color: colors.text },
     addSection: { marginTop: 10, borderTopWidth: 1, borderTopColor: colors.borderSubtle, paddingTop: 8 },
     addToggleText: { fontSize: 12.5, color: colors.primary, fontWeight: "700" },
     addPanel: { marginTop: 10 },

@@ -39,7 +39,7 @@ export default function MoreMenuScreen({
     return (
       <View style={{ flex: 1 }}>
         <BackHeader label={t("more.varsler")} onBack={() => setSubScreen("menu")} colors={colors} />
-        <VarslerScreen userId={userId} />
+        <VarslerScreen userId={userId} profile={profile} />
       </View>
     );
   }

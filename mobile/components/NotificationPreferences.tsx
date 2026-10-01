@@ -5,7 +5,7 @@ import { useTheme } from "../theme/ThemeContext";
 import { ThemeColors } from "../theme/colors";
 import { useLanguage } from "../lib/i18n/LanguageContext";
 
-const NOTIFICATION_TYPES = ["sykdom", "egenmelding_grense", "hendelse", "service_paaminnelse"] as const;
+const NOTIFICATION_TYPES = ["hendelse", "service_paaminnelse"] as const;
 
 export default function NotificationPreferences({ userId }: { userId: string }) {
   const { colors } = useTheme();

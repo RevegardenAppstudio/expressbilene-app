@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList, RefreshControl } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, Image, Linking, StyleSheet, FlatList, RefreshControl } from "react-native";
+import * as ImagePicker from "expo-image-picker";
 import { supabase } from "../lib/supabase";
 import { useTheme } from "../theme/ThemeContext";
 import { ThemeColors } from "../theme/colors";
@@ -8,6 +9,7 @@ import SearchPickerField from "../components/SearchPickerField";
 import { useLanguage } from "../lib/i18n/LanguageContext";
 
 const TYPES: EventType[] = ["utforkjoring", "biltrobbel", "verksted_service", "annet"];
+const EVENT_PHOTO_BUCKET = "hendelse-bilder";
 
 function formatDateTime(ts: string) {
   return new Date(ts).toLocaleString("nb-NO", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
@@ -21,6 +23,7 @@ export default function HendelserScreen({ userId, profile }: { userId: string; p
   const [events, setEvents] = useState<IncidentEvent[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -30,6 +33,9 @@ export default function HendelserScreen({ userId, profile }: { userId: string; p
   const [note, setNote] = useState("");
   const [departmentId, setDepartmentId] = useState("");
   const [vehicleId, setVehicleId] = useState("");
+  const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const [photoMimeType, setPhotoMimeType] = useState<string | null>(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   const myDepartmentId = profile?.department_id ?? null;
 
@@ -39,7 +45,20 @@ export default function HendelserScreen({ userId, profile }: { userId: string; p
       supabase.from("departments").select("*").order("name"),
       supabase.from("vehicles").select("*").order("name"),
     ]);
-    if (data) setEvents(data as IncidentEvent[]);
+    if (data) {
+      setEvents(data as IncidentEvent[]);
+      const imagePaths = (data as IncidentEvent[]).map((ev) => ev.image_path).filter((p): p is string => !!p);
+      if (imagePaths.length > 0) {
+        const { data: signed } = await supabase.storage.from(EVENT_PHOTO_BUCKET).createSignedUrls(imagePaths, 3600);
+        if (signed) {
+          const map: Record<string, string> = {};
+          for (const s of signed) {
+            if (s.signedUrl && s.path) map[s.path] = s.signedUrl;
+          }
+          setPhotoUrls(map);
+        }
+      }
+    }
     if (deps) setDepartments(deps as Department[]);
     if (vhs) setVehicles(vhs as Vehicle[]);
     setLoading(false);
@@ -54,15 +73,75 @@ export default function HendelserScreen({ userId, profile }: { userId: string; p
     if (myDepartmentId) setDepartmentId(myDepartmentId);
   }, [myDepartmentId]);
 
+  function clearPhoto() {
+    setPhotoUri(null);
+    setPhotoMimeType(null);
+  }
+
+  async function pickPhotoFromLibrary() {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      setError(t("hendelser.photoPermissionDenied"));
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], quality: 0.6 });
+    if (!result.canceled && result.assets[0]) {
+      setPhotoUri(result.assets[0].uri);
+      setPhotoMimeType(result.assets[0].mimeType ?? "image/jpeg");
+    }
+  }
+
+  async function takePhoto() {
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permission.granted) {
+      setError(t("hendelser.photoPermissionDenied"));
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({ mediaTypes: ["images"], quality: 0.6 });
+    if (!result.canceled && result.assets[0]) {
+      setPhotoUri(result.assets[0].uri);
+      setPhotoMimeType(result.assets[0].mimeType ?? "image/jpeg");
+    }
+  }
+
   async function handleSubmit() {
     setError(null);
     setSaving(true);
+
+    let imagePath: string | null = null;
+    if (photoUri) {
+      setUploadingPhoto(true);
+      const ext = photoMimeType === "image/png" ? "png" : "jpg";
+      const path = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      try {
+        const response = await fetch(photoUri);
+        const arrayBuffer = await response.arrayBuffer();
+        const { error: uploadError } = await supabase.storage
+          .from(EVENT_PHOTO_BUCKET)
+          .upload(path, arrayBuffer, { contentType: photoMimeType ?? "image/jpeg" });
+        if (uploadError) {
+          setUploadingPhoto(false);
+          setSaving(false);
+          setError(t("hendelser.uploadFailed"));
+          return;
+        }
+        imagePath = path;
+      } catch {
+        setUploadingPhoto(false);
+        setSaving(false);
+        setError(t("hendelser.uploadFailed"));
+        return;
+      }
+      setUploadingPhoto(false);
+    }
+
     const { error } = await supabase.from("events").insert({
       user_id: userId,
       type,
       note: note.trim() || null,
       department_id: departmentId || null,
       vehicle_id: vehicleId || null,
+      image_path: imagePath,
     });
     setSaving(false);
     if (error) {
@@ -70,6 +149,7 @@ export default function HendelserScreen({ userId, profile }: { userId: string; p
       return;
     }
     setNote("");
+    clearPhoto();
     load();
   }
 
@@ -158,14 +238,33 @@ export default function HendelserScreen({ userId, profile }: { userId: string; p
               placeholderTextColor={colors.textMuted}
             />
 
+            <Text style={styles.label}>{t("hendelser.photo")}</Text>
+            {photoUri ? (
+              <View style={styles.photoRow}>
+                <Image source={{ uri: photoUri }} style={styles.photoPreview} />
+                <TouchableOpacity onPress={clearPhoto} style={styles.photoRemoveBtn}>
+                  <Text style={styles.photoRemoveText}>{t("hendelser.removePhoto")}</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={styles.photoButtonRow}>
+                <TouchableOpacity onPress={takePhoto} style={styles.photoBtn}>
+                  <Text style={styles.photoBtnText}>{t("hendelser.takePhoto")}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={pickPhotoFromLibrary} style={styles.photoBtn}>
+                  <Text style={styles.photoBtnText}>{t("hendelser.choosePhoto")}</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
             {error ? <Text style={styles.error}>{error}</Text> : null}
 
             <TouchableOpacity
-              style={[styles.button, saving && styles.buttonDisabled]}
+              style={[styles.button, (saving || uploadingPhoto) && styles.buttonDisabled]}
               onPress={handleSubmit}
-              disabled={saving}
+              disabled={saving || uploadingPhoto}
             >
-              <Text style={styles.buttonText}>{saving ? t("hendelser.sending") : t("hendelser.report")}</Text>
+              <Text style={styles.buttonText}>{saving || uploadingPhoto ? t("hendelser.sending") : t("hendelser.report")}</Text>
             </TouchableOpacity>
             <Text style={styles.hint}>{t("hendelser.staffNotified")}</Text>
           </View>
@@ -183,6 +282,11 @@ export default function HendelserScreen({ userId, profile }: { userId: string; p
             </Text>
             {item.note ? <Text style={styles.entryNote}>{item.note}</Text> : null}
           </View>
+          {item.image_path && photoUrls[item.image_path] ? (
+            <TouchableOpacity onPress={() => Linking.openURL(photoUrls[item.image_path!])}>
+              <Image source={{ uri: photoUrls[item.image_path] }} style={styles.entryThumb} />
+            </TouchableOpacity>
+          ) : null}
           <Text style={styles.statusText}>{item.resolved ? t("hendelser.resolved") : t("hendelser.unresolved")}</Text>
         </View>
       )}
@@ -233,6 +337,20 @@ function createStyles(colors: ThemeColors) {
       marginBottom: 8,
       alignSelf: "flex-start",
     },
+    photoButtonRow: { flexDirection: "row", gap: 8 },
+    photoBtn: {
+      flex: 1,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      paddingVertical: 10,
+      alignItems: "center",
+    },
+    photoBtnText: { fontSize: 12.5, fontWeight: "600", color: colors.text },
+    photoRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+    photoPreview: { width: 56, height: 56, borderRadius: 8, borderWidth: 1, borderColor: colors.border },
+    photoRemoveBtn: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, paddingVertical: 8, paddingHorizontal: 12 },
+    photoRemoveText: { fontSize: 12.5, color: colors.text },
     error: { color: colors.danger, fontSize: 13, marginTop: 10 },
     button: {
       backgroundColor: colors.primary,
@@ -254,7 +372,9 @@ function createStyles(colors: ThemeColors) {
       marginBottom: 8,
       borderWidth: 1,
       borderColor: colors.borderSubtle,
+      gap: 10,
     },
+    entryThumb: { width: 36, height: 36, borderRadius: 6, borderWidth: 1, borderColor: colors.border },
     entryDate: { fontSize: 13.5, color: colors.text },
     entryDesc: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
     entryNote: { fontSize: 12, color: colors.textMuted, marginTop: 2 },

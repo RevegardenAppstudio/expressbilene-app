@@ -171,7 +171,6 @@ export default function AnsatteScreen({ userId, profile }: { userId: string; pro
     setSaving(true);
     const { error } = await insertStaffAbsence({
       userId: selectedEmployeeId,
-      decidedBy: userId,
       type: absenceType,
       startDate: toIsoDate(absenceStart),
       endDate: toIsoDate(absenceEnd),

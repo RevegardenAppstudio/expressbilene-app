@@ -13,6 +13,7 @@ export type Profile = {
   role: UserRole;
   department_id: string | null;
   notifications_viewed_at: string | null;
+  vacation_days_per_year: number;
   terms_accepted_at: string | null;
   language: "no" | "en";
   is_employee: boolean;
@@ -126,6 +127,7 @@ export type IncidentEvent = {
   vehicle_id: string | null;
   type: EventType;
   note: string | null;
+  image_path: string | null;
   occurred_at: string;
   resolved: boolean;
   resolved_by: string | null;
@@ -150,5 +152,16 @@ export type AppNotification = {
   created_by: string | null;
   archived_at: string | null;
   archived_by: string | null;
+  created_at: string;
+};
+
+export type AuditLogEntry = {
+  id: string;
+  actor_id: string | null;
+  action: string;
+  target_type: string | null;
+  target_id: string | null;
+  reason: string | null;
+  details: string | null;
   created_at: string;
 };
