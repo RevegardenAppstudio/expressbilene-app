@@ -54,6 +54,8 @@ const EVENT_TYPE_STYLES: Record<EventType, string> = {
   annet: "bg-slate-100 text-slate-700",
 };
 
+const EVENT_PHOTO_BUCKET = "hendelse-bilder";
+
 function SykefravaerTab() {
   const supabase = createClient();
   const { showToast } = useToast();
@@ -309,6 +311,7 @@ function HendelserTab() {
   const [events, setEvents] = useState<IncidentEvent[]>([]);
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
   const [vehicles, setVehicles] = useState<Record<string, Vehicle>>({});
+  const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [showResolved, setShowResolved] = useState(false);
 
@@ -323,7 +326,20 @@ function HendelserTab() {
       supabase.from("vehicles").select("*"),
     ]);
 
-    if (data) setEvents(data as IncidentEvent[]);
+    if (data) {
+      setEvents(data as IncidentEvent[]);
+      const imagePaths = (data as IncidentEvent[]).map((ev) => ev.image_path).filter((p): p is string => !!p);
+      if (imagePaths.length > 0) {
+        const { data: signed } = await supabase.storage.from(EVENT_PHOTO_BUCKET).createSignedUrls(imagePaths, 3600);
+        if (signed) {
+          const map: Record<string, string> = {};
+          for (const s of signed) {
+            if (s.signedUrl && s.path) map[s.path] = s.signedUrl;
+          }
+          setPhotoUrls(map);
+        }
+      }
+    }
     if (profileData) {
       const map: Record<string, Profile> = {};
       for (const p of profileData as Profile[]) map[p.id] = p;
@@ -368,19 +384,20 @@ function HendelserTab() {
               <th className="px-4 py-2">{t("hendelser.type")}</th>
               <th className="px-4 py-2">{t("hendelser.vehicle")}</th>
               <th className="px-4 py-2">{t("hendelser.note")}</th>
+              <th className="px-4 py-2">{t("hendelser.photo")}</th>
               <th className="px-4 py-2"></th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={6} className="px-4 py-6 text-center text-slate-400">
+                <td colSpan={7} className="px-4 py-6 text-center text-slate-400">
                   {t("common.loading")}
                 </td>
               </tr>
             ) : events.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-6 text-center text-slate-400">
+                <td colSpan={7} className="px-4 py-6 text-center text-slate-400">
                   {t("varsler.noEventsToShow")}
                 </td>
               </tr>
@@ -406,6 +423,20 @@ function HendelserTab() {
                     )}
                   </td>
                   <td className="px-4 py-2 text-slate-500" data-label={t("hendelser.note")}>{ev.note || "—"}</td>
+                  <td className="px-4 py-2" data-label={t("hendelser.photo")}>
+                    {ev.image_path && photoUrls[ev.image_path] ? (
+                      <a href={photoUrls[ev.image_path]} target="_blank" rel="noopener noreferrer">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={photoUrls[ev.image_path]}
+                          alt=""
+                          className="h-10 w-10 rounded-md border border-slate-200 object-cover hover:opacity-80"
+                        />
+                      </a>
+                    ) : (
+                      <span className="text-slate-400">—</span>
+                    )}
+                  </td>
                   <td className="px-4 py-2 text-right" data-label="">
                     {!ev.resolved && (
                       <button

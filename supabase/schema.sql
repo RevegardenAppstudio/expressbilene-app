@@ -691,6 +691,9 @@ create table if not exists public.events (
   vehicle_id uuid references public.vehicles(id) on delete set null,
   type public.event_type not null,
   note text,
+  -- Path i 'hendelse-bilder'-bucketen (se under), ikke en offentlig URL --
+  -- bildet hentes via signert URL siden bucketen er privat.
+  image_path text,
   occurred_at timestamptz not null default now(),
   resolved boolean not null default false,
   resolved_by uuid references public.profiles(id) on delete set null,
@@ -720,6 +723,35 @@ create policy "Stab kan slette hendelser" on public.events for delete to authent
 
 create index if not exists events_user_idx on public.events(user_id);
 create index if not exists events_occurred_idx on public.events(occurred_at);
+
+-- Privat bucket for hendelsesbilder. Path-prefikset i objektnavnet er
+-- eierens user_id (f.eks. '<user_id>/<uuid>.jpg'), slik at RLS kan håndheve
+-- tilgang direkte på storage.objects uten en egen kobling til events.
+insert into storage.buckets (id, name, public)
+values ('hendelse-bilder', 'hendelse-bilder', false)
+on conflict (id) do nothing;
+
+create policy "Bruker laster opp egne hendelsesbilder" on storage.objects for insert to authenticated
+  with check (
+    bucket_id = 'hendelse-bilder'
+    and (select auth.uid())::text = (storage.foldername(name))[1]
+  );
+create policy "Egne hendelsesbilder eller stab ser alle" on storage.objects for select to authenticated
+  using (
+    bucket_id = 'hendelse-bilder'
+    and (
+      (select auth.uid())::text = (storage.foldername(name))[1]
+      or public.can_manage_user((storage.foldername(name))[1]::uuid)
+    )
+  );
+create policy "Egne hendelsesbilder eller stab kan slette" on storage.objects for delete to authenticated
+  using (
+    bucket_id = 'hendelse-bilder'
+    and (
+      (select auth.uid())::text = (storage.foldername(name))[1]
+      or public.can_manage_user((storage.foldername(name))[1]::uuid)
+    )
+  );
 
 create or replace function public.handle_event_resolution()
 returns trigger language plpgsql as $$

@@ -135,6 +135,7 @@ export type IncidentEvent = {
   vehicle_id: string | null;
   type: EventType;
   note: string | null;
+  image_path: string | null;
   occurred_at: string;
   resolved: boolean;
   resolved_by: string | null;

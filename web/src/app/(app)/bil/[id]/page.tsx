@@ -35,6 +35,8 @@ const EVENT_TYPE_STYLES: Record<EventType, string> = {
   annet: "bg-slate-100 text-slate-700",
 };
 
+const EVENT_PHOTO_BUCKET = "hendelse-bilder";
+
 export default function BilPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
@@ -45,6 +47,7 @@ export default function BilPage() {
   const [department, setDepartment] = useState<Department | null>(null);
   const [events, setEvents] = useState<IncidentEvent[]>([]);
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
+  const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({});
   const [serviceBookings, setServiceBookings] = useState<VehicleServiceBooking[]>([]);
   const [canManageService, setCanManageService] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -86,6 +89,17 @@ export default function BilPage() {
           const map: Record<string, Profile> = {};
           for (const p of profileData as Profile[]) map[p.id] = p as Profile;
           setProfiles(map);
+        }
+      }
+      const imagePaths = (eventData as IncidentEvent[]).map((e) => e.image_path).filter((p): p is string => !!p);
+      if (imagePaths.length > 0) {
+        const { data: signed } = await supabase.storage.from(EVENT_PHOTO_BUCKET).createSignedUrls(imagePaths, 3600);
+        if (signed) {
+          const map: Record<string, string> = {};
+          for (const s of signed) {
+            if (s.signedUrl && s.path) map[s.path] = s.signedUrl;
+          }
+          setPhotoUrls(map);
         }
       }
     }
@@ -257,13 +271,14 @@ export default function BilPage() {
                 <th className="px-4 py-2">{t("bil.reportedBy")}</th>
                 <th className="px-4 py-2">{t("bil.type")}</th>
                 <th className="px-4 py-2">{t("bil.note")}</th>
+                <th className="px-4 py-2">{t("bil.photo")}</th>
                 <th className="px-4 py-2">{t("bil.status")}</th>
               </tr>
             </thead>
             <tbody>
               {events.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-4 py-6 text-center text-slate-400">
+                  <td colSpan={6} className="px-4 py-6 text-center text-slate-400">
                     {t("bil.noEvents")}
                   </td>
                 </tr>
@@ -280,6 +295,20 @@ export default function BilPage() {
                       </span>
                     </td>
                     <td className="px-4 py-2 text-slate-500" data-label={t("bil.note")}>{ev.note || "—"}</td>
+                    <td className="px-4 py-2" data-label={t("bil.photo")}>
+                      {ev.image_path && photoUrls[ev.image_path] ? (
+                        <a href={photoUrls[ev.image_path]} target="_blank" rel="noopener noreferrer">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={photoUrls[ev.image_path]}
+                            alt=""
+                            className="h-10 w-10 rounded-md border border-slate-200 object-cover hover:opacity-80"
+                          />
+                        </a>
+                      ) : (
+                        <span className="text-slate-400">—</span>
+                      )}
+                    </td>
                     <td className="px-4 py-2 text-slate-500" data-label={t("bil.status")}>{ev.resolved ? t("bil.resolved") : t("bil.unresolved")}</td>
                   </tr>
                 ))
