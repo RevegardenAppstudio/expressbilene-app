@@ -33,6 +33,28 @@ export function buildMonthGrid(year: number, month: number): Date[] {
   return days;
 }
 
+// Bygger en 1x7-rutenett (mandag først) for uken som inneholder `iso`.
+export function buildWeekGrid(iso: string): Date[] {
+  const d = new Date(iso + "T00:00:00");
+  const startOffset = (d.getDay() + 6) % 7; // mandag = 0
+  const start = new Date(d);
+  start.setDate(d.getDate() - startOffset);
+
+  const days: Date[] = [];
+  for (let i = 0; i < 7; i++) {
+    const day = new Date(start);
+    day.setDate(start.getDate() + i);
+    days.push(day);
+  }
+  return days;
+}
+
+export function addDaysIso(iso: string, days: number): string {
+  const d = new Date(iso + "T00:00:00");
+  d.setDate(d.getDate() + days);
+  return toIsoDate(d);
+}
+
 export const WEEKDAY_LABELS_NO = ["Man", "Tir", "Ons", "Tor", "Fre", "Lør", "Søn"];
 export const WEEKDAY_LABELS_EN = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 

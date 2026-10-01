@@ -131,6 +131,8 @@ const no = {
   kalender: {
     title: "Kalender",
     subtitle: "Team-oversikt over ferie, sykdom og permisjon",
+    monthView: "Måned",
+    weekView: "Uke",
     allDepartments: "Alle avdelinger",
     toggleHint: "Trykk på en kategori for å skjule/vise den i kalenderen.",
     more: "+{{count}} til",
@@ -680,6 +682,8 @@ const en: typeof no = {
   kalender: {
     title: "Calendar",
     subtitle: "Team overview of vacation, sickness and leave",
+    monthView: "Month",
+    weekView: "Week",
     allDepartments: "All departments",
     toggleHint: "Tap a category to show/hide it in the calendar.",
     more: "+{{count}} more",

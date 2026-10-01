@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { buildMonthGrid, monthLabels, weekdayLabels, toIsoDate } from "@/lib/calendar";
+import { buildMonthGrid, buildWeekGrid, addDaysIso, monthLabels, weekdayLabels, toIsoDate } from "@/lib/calendar";
 import {
   ABSENCE_TYPE_LABELS,
   ADMIN_ONLY_ABSENCE_TYPES,
@@ -47,14 +47,18 @@ const SERVICE_DOT = "bg-orange-600";
 const CANCEL_DOT = "bg-slate-500";
 
 type AddMode = "fravaer" | "verksted" | "innstill" | null;
+type ViewMode = "month" | "week";
 
 export default function KalenderPage() {
   const supabase = createClient();
   const { showToast } = useToast();
   const { language, t } = useLanguage();
   const now = new Date();
+  const todayIso = toIsoDate(now);
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth());
+  const [viewMode, setViewMode] = useState<ViewMode>("month");
+  const [weekAnchor, setWeekAnchor] = useState(todayIso);
   const [absences, setAbsences] = useState<Absence[]>([]);
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
   const [serviceBookings, setServiceBookings] = useState<VehicleServiceBooking[]>([]);
@@ -92,9 +96,12 @@ export default function KalenderPage() {
   const [pendingSaveAbsenceId, setPendingSaveAbsenceId] = useState<string | null>(null);
   const [pendingDeleteAbsenceId, setPendingDeleteAbsenceId] = useState<string | null>(null);
 
-  const grid = useMemo(() => buildMonthGrid(year, month), [year, month]);
+  const grid = useMemo(
+    () => (viewMode === "week" ? buildWeekGrid(weekAnchor) : buildMonthGrid(year, month)),
+    [viewMode, year, month, weekAnchor]
+  );
   const gridStart = toIsoDate(grid[0]);
-  const gridEnd = toIsoDate(grid[41]);
+  const gridEnd = toIsoDate(grid[grid.length - 1]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -430,7 +437,11 @@ export default function KalenderPage() {
     await load();
   }
 
-  function goToPrevMonth() {
+  function goToPrev() {
+    if (viewMode === "week") {
+      setWeekAnchor((iso) => addDaysIso(iso, -7));
+      return;
+    }
     if (month === 0) {
       setYear((y) => y - 1);
       setMonth(11);
@@ -439,7 +450,11 @@ export default function KalenderPage() {
     }
   }
 
-  function goToNextMonth() {
+  function goToNext() {
+    if (viewMode === "week") {
+      setWeekAnchor((iso) => addDaysIso(iso, 7));
+      return;
+    }
     if (month === 11) {
       setYear((y) => y + 1);
       setMonth(0);
@@ -448,7 +463,30 @@ export default function KalenderPage() {
     }
   }
 
-  const todayIso = toIsoDate(now);
+  // Når man bytter visning, følger man med til samme periode i den andre
+  // visningen i stedet for å hoppe tilbake til der man sist var.
+  function switchToWeekView() {
+    if (viewMode !== "week") {
+      setWeekAnchor(year === now.getFullYear() && month === now.getMonth() ? todayIso : toIsoDate(new Date(year, month, 1)));
+      setViewMode("week");
+    }
+  }
+
+  function switchToMonthView() {
+    if (viewMode !== "month") {
+      const d = new Date(weekAnchor + "T00:00:00");
+      setYear(d.getFullYear());
+      setMonth(d.getMonth());
+      setViewMode("month");
+    }
+  }
+
+  function weekRangeLabel(weekStart: Date, weekEnd: Date) {
+    const months = monthLabels(language);
+    const start = `${weekStart.getDate()} ${months[weekStart.getMonth()].slice(0, 3)}`;
+    const end = `${weekEnd.getDate()} ${months[weekEnd.getMonth()].slice(0, 3)} ${weekEnd.getFullYear()}`;
+    return `${start} – ${end}`;
+  }
 
   return (
     <div className="space-y-6">
@@ -458,6 +496,24 @@ export default function KalenderPage() {
           <p className="text-sm text-slate-500">{t("kalender.subtitle")}</p>
         </div>
         <div className="flex items-center gap-2">
+          <div className="flex rounded-md border border-slate-300 text-sm">
+            <button
+              onClick={switchToMonthView}
+              className={`rounded-l-md px-2.5 py-1.5 transition-colors ${
+                viewMode === "month" ? "bg-brand font-medium text-black" : "text-slate-600 hover:bg-slate-100"
+              }`}
+            >
+              {t("kalender.monthView")}
+            </button>
+            <button
+              onClick={switchToWeekView}
+              className={`rounded-r-md border-l border-slate-300 px-2.5 py-1.5 transition-colors ${
+                viewMode === "week" ? "bg-brand font-medium text-black" : "text-slate-600 hover:bg-slate-100"
+              }`}
+            >
+              {t("kalender.weekView")}
+            </button>
+          </div>
           <select
             value={departmentFilter}
             onChange={(e) => setDepartmentFilter(e.target.value)}
@@ -471,16 +527,16 @@ export default function KalenderPage() {
             ))}
           </select>
           <button
-            onClick={goToPrevMonth}
+            onClick={goToPrev}
             className="rounded-md border border-slate-300 px-2.5 py-1.5 text-sm text-slate-600 hover:bg-slate-100"
           >
             ←
           </button>
-          <span className="w-36 text-center text-sm font-medium text-slate-700">
-            {monthLabels(language)[month]} {year}
+          <span className="min-w-[9rem] text-center text-sm font-medium text-slate-700">
+            {viewMode === "week" ? weekRangeLabel(grid[0], grid[grid.length - 1]) : `${monthLabels(language)[month]} ${year}`}
           </span>
           <button
-            onClick={goToNextMonth}
+            onClick={goToNext}
             className="rounded-md border border-slate-300 px-2.5 py-1.5 text-sm text-slate-600 hover:bg-slate-100"
           >
             →
@@ -533,7 +589,7 @@ export default function KalenderPage() {
         <div className="grid grid-cols-7">
           {grid.map((date) => {
             const iso = toIsoDate(date);
-            const inMonth = date.getMonth() === month;
+            const inMonth = viewMode === "week" || date.getMonth() === month;
             const dayAbsences = absencesForDay(iso);
             const visibleAbsences = dayAbsences.filter((a) => !hiddenTypes.has(a.type));
             const visibleServices = hiddenTypes.has("service") ? [] : servicesForDay(iso);
@@ -541,17 +597,18 @@ export default function KalenderPage() {
             const hasContent =
               visibleAbsences.length > 0 || visibleServices.length > 0 || visibleCancellations.length > 0;
             const isClickable = hasContent || isStaff;
+            const maxVisible = viewMode === "week" ? 8 : 3;
             return (
               <div
                 key={iso}
                 onClick={isClickable ? () => openDay(iso) : undefined}
-                className={`min-h-[92px] border-b border-r border-slate-100 p-1.5 last:border-r-0 ${
+                className={`${viewMode === "week" ? "min-h-[200px]" : "min-h-[92px]"} border-b border-r border-slate-100 p-1.5 last:border-r-0 ${
                   inMonth ? "bg-white" : "bg-slate-50 text-slate-300"
                 } ${iso === todayIso ? "ring-1 ring-inset ring-brand" : ""} ${isClickable ? "cursor-pointer hover:bg-slate-50" : ""}`}
               >
                 <div className="text-xs font-medium">{date.getDate()}</div>
                 <div className="mt-1 space-y-0.5">
-                  {visibleAbsences.slice(0, 3).map((a) => (
+                  {visibleAbsences.slice(0, maxVisible).map((a) => (
                     <div
                       key={a.id}
                       title={`${profiles[a.user_id]?.full_name ?? "?"} — ${t(`absenceType.${a.type}`)}`}
@@ -560,10 +617,10 @@ export default function KalenderPage() {
                       {profiles[a.user_id]?.full_name.split(" ")[0] ?? "?"} {t(`absenceType.${a.type}`)}
                     </div>
                   ))}
-                  {visibleAbsences.length > 3 && (
-                    <div className="text-[10px] text-slate-400">{t("kalender.more", { count: visibleAbsences.length - 3 })}</div>
+                  {visibleAbsences.length > maxVisible && (
+                    <div className="text-[10px] text-slate-400">{t("kalender.more", { count: visibleAbsences.length - maxVisible })}</div>
                   )}
-                  {visibleServices.slice(0, 3).map((b) => (
+                  {visibleServices.slice(0, maxVisible).map((b) => (
                     <div
                       key={b.id}
                       title={`${vehicles[b.vehicle_id] ? vehicleLabel(vehicles[b.vehicle_id]) : "?"}${b.note ? ` — ${b.note}` : ""}`}
@@ -573,10 +630,10 @@ export default function KalenderPage() {
                       <span className="truncate">{vehicles[b.vehicle_id] ? vehicleLabel(vehicles[b.vehicle_id]) : "?"}</span>
                     </div>
                   ))}
-                  {visibleServices.length > 3 && (
-                    <div className="text-[10px] text-orange-700">{t("kalender.moreService", { count: visibleServices.length - 3 })}</div>
+                  {visibleServices.length > maxVisible && (
+                    <div className="text-[10px] text-orange-700">{t("kalender.moreService", { count: visibleServices.length - maxVisible })}</div>
                   )}
-                  {visibleCancellations.slice(0, 3).map((c) => (
+                  {visibleCancellations.slice(0, maxVisible).map((c) => (
                     <div
                       key={c.id}
                       title={`${routeById[c.route_id]?.name ?? "?"}${c.note ? ` — ${c.note}` : ""}`}
@@ -586,8 +643,8 @@ export default function KalenderPage() {
                       <span className="truncate">{routeById[c.route_id]?.name ?? "?"}</span>
                     </div>
                   ))}
-                  {visibleCancellations.length > 3 && (
-                    <div className="text-[10px] text-slate-500">{t("kalender.moreCancellation", { count: visibleCancellations.length - 3 })}</div>
+                  {visibleCancellations.length > maxVisible && (
+                    <div className="text-[10px] text-slate-500">{t("kalender.moreCancellation", { count: visibleCancellations.length - maxVisible })}</div>
                   )}
                 </div>
               </div>
