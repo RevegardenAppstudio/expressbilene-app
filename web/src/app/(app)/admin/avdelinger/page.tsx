@@ -30,7 +30,7 @@ export default function AvdelingerPage() {
   const [routes, setRoutes] = useState<Route[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [users, setUsers] = useState<AdminUserRow[]>([]);
-  const [activeUserIds, setActiveUserIds] = useState<Set<string>>(new Set());
+  const [activeEntries, setActiveEntries] = useState<Map<string, { route_id: string | null; vehicle_id: string | null }>>(new Map());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -92,8 +92,21 @@ export default function AvdelingerPage() {
   const isModerator = myRole === "moderator";
 
   const loadActiveUsers = useCallback(async () => {
-    const { data: activeData } = await supabase.from("time_entries").select("user_id").not("clock_in", "is", null).is("clock_out", null);
-    if (activeData) setActiveUserIds(new Set((activeData as { user_id: string }[]).map((e) => e.user_id)));
+    const { data: activeData } = await supabase
+      .from("time_entries")
+      .select("user_id, route_id, vehicle_id")
+      .not("clock_in", "is", null)
+      .is("clock_out", null);
+    if (activeData) {
+      setActiveEntries(
+        new Map(
+          (activeData as { user_id: string; route_id: string | null; vehicle_id: string | null }[]).map((e) => [
+            e.user_id,
+            { route_id: e.route_id, vehicle_id: e.vehicle_id },
+          ])
+        )
+      );
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -1245,11 +1258,22 @@ export default function AvdelingerPage() {
                       </td>
                       <td className="px-4 py-2 text-slate-500" data-label={t("avdelinger.role")}>{ROLE_LABELS[u.role]}</td>
                       <td className="px-4 py-2" data-label={t("avdelinger.activeStatus")}>
-                        {activeUserIds.has(u.id) ? (
-                          <span className="flex items-center gap-1.5 text-xs font-medium text-green-700">
-                            <span className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-green-500" />
-                            {t("avdelinger.clockedIn")}
-                          </span>
+                        {activeEntries.has(u.id) ? (
+                          (() => {
+                            const entry = activeEntries.get(u.id)!;
+                            const routeName = entry.route_id ? routes.find((r) => r.id === entry.route_id)?.name : null;
+                            const vehicle = entry.vehicle_id ? vehicles.find((v) => v.id === entry.vehicle_id) : null;
+                            const detail = [routeName, vehicle ? vehicleLabel(vehicle) : null].filter(Boolean).join(" · ");
+                            return (
+                              <span className="group relative flex w-fit items-center gap-1.5 text-xs font-medium text-green-700">
+                                <span className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-green-500" />
+                                {t("avdelinger.clockedIn")}
+                                <span className="pointer-events-none absolute left-0 top-full z-10 mt-1 whitespace-nowrap rounded-md bg-slate-800 px-2 py-1 text-xs font-normal text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
+                                  {detail || t("avdelinger.noRouteVehicle")}
+                                </span>
+                              </span>
+                            );
+                          })()
                         ) : (
                           <span className="text-xs text-slate-400">{t("avdelinger.notClockedIn")}</span>
                         )}
