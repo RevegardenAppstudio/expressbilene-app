@@ -34,7 +34,8 @@
           "photosPermission": "Appen bruker bildebiblioteket for å legge ved bilde på en hendelse.",
           "cameraPermission": "Appen bruker kameraet for å ta bilde til en hendelse."
         }
-      ]
+      ],
+      "./plugins/withOptionalCameraFeature.js"
     ],
     "extra": {
       "eas": {
