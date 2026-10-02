@@ -143,7 +143,7 @@ const no = {
     service_paaminnelse: "Service",
   },
   auditAction: {
-    user: { updated: "Bruker endret", deleted: "Bruker slettet" },
+    user: { updated: "Bruker endret", deleted: "Bruker slettet", password_reset: "Passord tilbakestilt" },
     time_entry: { corrected: "Timer korrigert", deleted: "Timeregistrering slettet" },
     vehicle: { moved: "Bil flyttet" },
     absence: { updated: "Fravær endret", deleted: "Fravær slettet" },
@@ -430,7 +430,7 @@ const en: typeof no = {
     service_paaminnelse: "Service",
   },
   auditAction: {
-    user: { updated: "User updated", deleted: "User deleted" },
+    user: { updated: "User updated", deleted: "User deleted", password_reset: "Password reset" },
     time_entry: { corrected: "Time entry corrected", deleted: "Time entry deleted" },
     vehicle: { moved: "Vehicle moved" },
     absence: { updated: "Absence updated", deleted: "Absence deleted" },
