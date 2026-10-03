@@ -216,6 +216,11 @@ const no = {
     endBeforeStartError: "Sluttdato kan ikke være før startdato.",
     overlapError: "Du har allerede en fraværssøknad som overlapper med denne perioden.",
   },
+  update: {
+    available: "Ny versjon tilgjengelig",
+    version: "Versjon {{version}}",
+    download: "Last ned",
+  },
   oversikt: {
     title: "Oversikt",
     subtitle: "Dine timer og fravær",
@@ -506,6 +511,11 @@ const en: typeof no = {
     noApplications: "No absence requests yet.",
     endBeforeStartError: "The end date cannot be before the start date.",
     overlapError: "You already have an absence request that overlaps with this period.",
+  },
+  update: {
+    available: "New version available",
+    version: "Version {{version}}",
+    download: "Download",
   },
   oversikt: {
     title: "Overview",

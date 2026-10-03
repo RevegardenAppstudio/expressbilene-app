@@ -11,6 +11,7 @@ import HomeScreen from "./screens/HomeScreen";
 import OversiktScreen from "./screens/OversiktScreen";
 import HendelserScreen from "./screens/HendelserScreen";
 import MoreMenuScreen, { MoreSubScreen } from "./screens/MoreMenuScreen";
+import UpdateBanner from "./components/UpdateBanner";
 import { ThemeProvider, useTheme } from "./theme/ThemeContext";
 import { ThemeColors } from "./theme/colors";
 import { registerPushToken } from "./lib/notifications";
@@ -173,6 +174,7 @@ function AppScreens({
   return (
     <SafeAreaView style={styles.safe}>
       <StatusBar style={mode === "dark" ? "light" : "dark"} />
+      <UpdateBanner />
       <View style={{ flex: 1 }}>
         {tab === "home" ? (
           <HomeScreen userId={session.user.id} profile={profile} />

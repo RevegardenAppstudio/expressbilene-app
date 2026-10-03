@@ -1060,3 +1060,37 @@ end;
 $$;
 revoke execute on function public.auto_clock_out_stale_punches() from public, anon, authenticated;
 select cron.schedule('auto-clock-out-stale-punches', '*/15 * * * *', $$select public.auto_clock_out_stale_punches();$$);
+
+-- ============================================================
+-- Android-distribusjon via direkte lenke (sideloading). APK-filer ligger i
+-- en offentlig bøtte; app_releases forteller hvilken versjon som er nyest,
+-- slik at appen kan varsle om oppdatering og /last-ned kan lenke til filen.
+-- ============================================================
+insert into storage.buckets (id, name, public)
+values ('app-releases', 'app-releases', true)
+on conflict (id) do update set public = true;
+
+create policy "Admin kan laste opp app-utgivelser" on storage.objects for insert to authenticated
+  with check (bucket_id = 'app-releases' and public.is_admin());
+create policy "Admin kan slette app-utgivelser" on storage.objects for delete to authenticated
+  using (bucket_id = 'app-releases' and public.is_admin());
+
+create table if not exists public.app_releases (
+  id uuid primary key default gen_random_uuid(),
+  platform text not null default 'android' check (platform in ('android')),
+  version_code integer not null,
+  version_name text not null,
+  apk_path text not null,
+  notes text,
+  created_by uuid references public.profiles(id) on delete set null,
+  created_at timestamptz not null default now(),
+  unique (platform, version_code)
+);
+create index if not exists idx_app_releases_created_by on public.app_releases (created_by);
+alter table public.app_releases enable row level security;
+
+create policy "Alle kan lese app-utgivelser" on public.app_releases for select to anon, authenticated using (true);
+create policy "Admin kan publisere app-utgivelser" on public.app_releases for insert to authenticated
+  with check (public.is_admin());
+create policy "Admin kan slette app-utgivelser" on public.app_releases for delete to authenticated
+  using (public.is_admin());
