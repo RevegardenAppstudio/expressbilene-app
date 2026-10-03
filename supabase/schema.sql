@@ -1019,3 +1019,33 @@ alter policy "Bruker styrer egne push-preferanser" on public.push_notification_p
 -- Postgres ikke stotter kommadelte kommandoer i én policy.
 
 notify pgrst, 'reload schema';
+
+-- ============================================================
+-- Automatisk utstempling etter 24 timer (glemt utstempling). Kjører hvert
+-- 15. minutt; setter clock_out = clock_in + 24t og logger i endringsloggen
+-- (actor_id null = System) slik at stab kan korrigere i etterkant.
+-- ============================================================
+create or replace function public.auto_clock_out_stale_punches()
+returns void language plpgsql security definer set search_path = public as $$
+declare
+  r record;
+begin
+  for r in
+    select id, user_id, clock_in from public.time_entries
+    where clock_in is not null and clock_out is null
+      and clock_in <= now() - interval '24 hours'
+    for update
+  loop
+    update public.time_entries set clock_out = r.clock_in + interval '24 hours' where id = r.id;
+    insert into public.audit_log (actor_id, action, target_type, target_id, details)
+    values (
+      null, 'time_entry.auto_clocked_out', 'time_entries', r.id,
+      (select full_name from public.profiles where id = r.user_id)
+        || ': automatisk utstemplet etter 24 timer (innstemplet '
+        || to_char(r.clock_in at time zone 'Europe/Oslo', 'DD.MM.YYYY HH24:MI') || ')'
+    );
+  end loop;
+end;
+$$;
+revoke execute on function public.auto_clock_out_stale_punches() from public, anon, authenticated;
+select cron.schedule('auto-clock-out-stale-punches', '*/15 * * * *', $$select public.auto_clock_out_stale_punches();$$);
