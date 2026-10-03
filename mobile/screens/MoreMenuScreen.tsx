@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { useTheme } from "../theme/ThemeContext";
 import { ThemeColors } from "../theme/colors";
@@ -29,6 +29,7 @@ export default function MoreMenuScreen({
   const { t } = useLanguage();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const isStaff = profile?.role === "admin" || profile?.role === "moderator";
+  const [ansatteTargetId, setAnsatteTargetId] = useState("");
 
   // Sjåfør har ingenting å velge mellom -- går rett til innstillinger, som før.
   if (!isStaff) {
@@ -39,7 +40,14 @@ export default function MoreMenuScreen({
     return (
       <View style={{ flex: 1 }}>
         <BackHeader label={t("more.varsler")} onBack={() => setSubScreen("menu")} colors={colors} />
-        <VarslerScreen userId={userId} profile={profile} />
+        <VarslerScreen
+          userId={userId}
+          profile={profile}
+          onOpenEmployee={(id) => {
+            setAnsatteTargetId(id);
+            setSubScreen("ansatte");
+          }}
+        />
       </View>
     );
   }
@@ -56,8 +64,15 @@ export default function MoreMenuScreen({
   if (subScreen === "ansatte") {
     return (
       <View style={{ flex: 1 }}>
-        <BackHeader label={t("more.ansatte")} onBack={() => setSubScreen("menu")} colors={colors} />
-        <AnsatteScreen userId={userId} profile={profile} />
+        <BackHeader
+          label={t("more.ansatte")}
+          onBack={() => {
+            setAnsatteTargetId("");
+            setSubScreen("menu");
+          }}
+          colors={colors}
+        />
+        <AnsatteScreen userId={userId} profile={profile} initialEmployeeId={ansatteTargetId} />
       </View>
     );
   }

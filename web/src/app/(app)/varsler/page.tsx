@@ -126,6 +126,82 @@ function ServiceTab() {
   );
 }
 
+function AutoClockOutNotices() {
+  const supabase = createClient();
+  const { showToast } = useToast();
+  const { t } = useLanguage();
+  const [notices, setNotices] = useState<AppNotification[]>([]);
+
+  const load = useCallback(async () => {
+    const { data } = await supabase
+      .from("notifications")
+      .select("*")
+      .eq("type", "auto_utstempling")
+      .is("archived_at", null)
+      .order("created_at", { ascending: false });
+    if (data) setNotices(data as AppNotification[]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  async function handleArchive(id: string) {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+    const { error } = await supabase
+      .from("notifications")
+      .update({ archived_at: new Date().toISOString(), archived_by: user.id })
+      .eq("id", id);
+    if (error) {
+      showToast(t("varsler.archiveFailed"), "error");
+      return;
+    }
+    showToast(t("varsler.archivedToast"));
+    load();
+  }
+
+  if (notices.length === 0) return null;
+
+  return (
+    <div className="space-y-2">
+      <div>
+        <h2 className="text-sm font-semibold text-slate-800">{t("varsler.autoClockOutTitle")}</h2>
+        <p className="text-xs text-slate-500">{t("varsler.autoClockOutHint")}</p>
+      </div>
+      {notices.map((n) => (
+        <div key={n.id} className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 shadow-sm">
+          <span className="text-xl">⏱️</span>
+          <div className="flex-1">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-sm font-semibold text-slate-800">{n.title}</p>
+              <span className="whitespace-nowrap text-xs text-slate-400">{formatDateTime(n.created_at)}</span>
+            </div>
+            {n.body && <p className="mt-0.5 text-sm text-slate-600">{n.body}</p>}
+            {n.created_by && (
+              <Link
+                href={`/sammendrag?user=${n.created_by}`}
+                className="mt-2 inline-block text-sm font-medium text-brand-dark hover:underline"
+              >
+                {t("varsler.openEmployee")} →
+              </Link>
+            )}
+          </div>
+          <button
+            onClick={() => handleArchive(n.id)}
+            className="shrink-0 rounded-md border border-slate-300 bg-white px-2.5 py-1 text-xs text-slate-500 hover:bg-slate-100"
+          >
+            {t("varsler.archive")}
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function HendelserTab() {
   const supabase = createClient();
   const { showToast } = useToast();
@@ -192,6 +268,7 @@ function HendelserTab() {
 
   return (
     <div className="space-y-4">
+      <AutoClockOutNotices />
       <label className="flex items-center gap-2 text-sm text-slate-600">
         <input type="checkbox" checked={showResolved} onChange={(e) => setShowResolved(e.target.checked)} />
         {t("varsler.showResolvedAlso")}

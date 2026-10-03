@@ -141,6 +141,7 @@ const no = {
   notificationType: {
     hendelse: "Hendelse",
     service_paaminnelse: "Service",
+    auto_utstempling: "Automatisk utstempling",
   },
   auditAction: {
     user: { updated: "Bruker endret", deleted: "Bruker slettet", password_reset: "Passord tilbakestilt" },
@@ -160,6 +161,9 @@ const no = {
     hideArchived: "Skjul arkiverte",
     read: "Lest",
     noNotifications: "Ingen varsler ennå.",
+    autoClockOutTitle: "Automatiske utstemplinger",
+    autoClockOutHint: "Ansatte som ikke stemplet ut innen 24 timer. Åpne den ansatte og korriger til faktiske timer.",
+    openEmployee: "Åpne ansatt",
     showResolvedAlso: "Vis løste også",
     noEventsToShow: "Ingen hendelser å vise.",
     markResolved: "Merk løst",
@@ -428,6 +432,7 @@ const en: typeof no = {
   notificationType: {
     hendelse: "Event",
     service_paaminnelse: "Service",
+    auto_utstempling: "Automatic clock-out",
   },
   auditAction: {
     user: { updated: "User updated", deleted: "User deleted", password_reset: "Password reset" },
@@ -447,6 +452,9 @@ const en: typeof no = {
     hideArchived: "Hide archived",
     read: "Read",
     noNotifications: "No notifications yet.",
+    autoClockOutTitle: "Automatic clock-outs",
+    autoClockOutHint: "Employees who did not clock out within 24 hours. Open the employee and correct to the actual hours.",
+    openEmployee: "Open employee",
     showResolvedAlso: "Show resolved too",
     noEventsToShow: "No events to show.",
     markResolved: "Mark resolved",

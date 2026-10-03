@@ -14,7 +14,15 @@ const AUDIT_LOG_LIMIT = 50;
 
 type Tab = "hendelser" | "service" | "endringslogg";
 
-export default function VarslerScreen({ userId, profile }: { userId: string; profile: Profile | null }) {
+export default function VarslerScreen({
+  userId,
+  profile,
+  onOpenEmployee,
+}: {
+  userId: string;
+  profile: Profile | null;
+  onOpenEmployee?: (employeeId: string) => void;
+}) {
   const { colors } = useTheme();
   const { t } = useLanguage();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -25,6 +33,7 @@ export default function VarslerScreen({ userId, profile }: { userId: string; pro
   const [vehicles, setVehicles] = useState<Record<string, Vehicle>>({});
 
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [autoNotices, setAutoNotices] = useState<AppNotification[]>([]);
   const [showArchived, setShowArchived] = useState(false);
 
   const [events, setEvents] = useState<IncidentEvent[]>([]);
@@ -45,11 +54,19 @@ export default function VarslerScreen({ userId, profile }: { userId: string; pro
       .limit(50);
     if (!showArchived) notificationQuery = notificationQuery.is("archived_at", null);
 
+    const autoNoticeQuery = supabase
+      .from("notifications")
+      .select("*")
+      .eq("type", "auto_utstempling")
+      .is("archived_at", null)
+      .order("created_at", { ascending: false });
+
     let eventQuery = supabase.from("events").select("*").order("occurred_at", { ascending: false }).limit(50);
     if (!showResolved) eventQuery = eventQuery.eq("resolved", false);
 
-    const [{ data: notifData }, { data: eventData }, { data: auditData }, { data: profileData }, { data: vehicleData }] = await Promise.all([
+    const [{ data: notifData }, { data: autoData }, { data: eventData }, { data: auditData }, { data: profileData }, { data: vehicleData }] = await Promise.all([
       notificationQuery,
+      autoNoticeQuery,
       eventQuery,
       isAdmin
         ? supabase.from("audit_log").select("*").order("created_at", { ascending: false }).limit(AUDIT_LOG_LIMIT)
@@ -59,6 +76,7 @@ export default function VarslerScreen({ userId, profile }: { userId: string; pro
     ]);
 
     if (notifData) setNotifications(notifData as AppNotification[]);
+    if (autoData) setAutoNotices(autoData as AppNotification[]);
     if (eventData) setEvents(eventData as IncidentEvent[]);
     if (auditData) setAuditEntries(auditData as AuditLogEntry[]);
     if (profileData) {
@@ -82,6 +100,7 @@ export default function VarslerScreen({ userId, profile }: { userId: string; pro
 
   async function handleArchive(id: string) {
     setNotifications((prev) => prev.filter((n) => n.id !== id));
+    setAutoNotices((prev) => prev.filter((n) => n.id !== id));
     const { error } = await supabase
       .from("notifications")
       .update({ archived_at: new Date().toISOString(), archived_by: userId })
@@ -142,6 +161,33 @@ export default function VarslerScreen({ userId, profile }: { userId: string; pro
 
       {tab === "hendelser" ? (
         <View>
+          {autoNotices.length > 0 && (
+            <View style={{ marginBottom: 14 }}>
+              <Text style={styles.sectionTitle}>{t("varsler.autoClockOutTitle")}</Text>
+              <Text style={styles.autoHint}>{t("varsler.autoClockOutHint")}</Text>
+              {autoNotices.map((n) => (
+                <View key={n.id} style={styles.autoRow}>
+                  <View style={{ flex: 1 }}>
+                    <View style={styles.rowTop}>
+                      <Text style={[styles.itemTitle, { flex: 1 }]}>{n.title}</Text>
+                      <Text style={styles.time}>{formatDateTime(n.created_at)}</Text>
+                    </View>
+                    {n.body ? <Text style={styles.itemBody}>{n.body}</Text> : null}
+                    <View style={{ flexDirection: "row", gap: 16, marginTop: 8 }}>
+                      {n.created_by && onOpenEmployee && (
+                        <TouchableOpacity onPress={() => onOpenEmployee(n.created_by as string)}>
+                          <Text style={styles.toggleText}>{t("varsler.openEmployee")} →</Text>
+                        </TouchableOpacity>
+                      )}
+                      <TouchableOpacity onPress={() => handleArchive(n.id)}>
+                        <Text style={styles.autoArchiveText}>{t("varsler.read")}</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </View>
+              ))}
+            </View>
+          )}
           <View style={styles.sectionHeaderRow}>
             <Text style={styles.sectionTitle}>{t("varsler.tabHendelser")}</Text>
             <TouchableOpacity onPress={() => setShowResolved((v) => !v)}>
@@ -277,6 +323,18 @@ function createStyles(colors: ThemeColors) {
     decisionBtn: { borderRadius: 6, paddingVertical: 6, paddingHorizontal: 10 },
     decisionBtnText: { fontSize: 11.5, fontWeight: "700", color: "#FFFFFF" },
     resolvedText: { fontSize: 11.5, color: colors.textMuted, alignSelf: "center" },
+    autoHint: { fontSize: 11.5, color: colors.textMuted, marginBottom: 8 },
+    autoArchiveText: { fontSize: 12, color: colors.textMuted, fontWeight: "600" },
+    autoRow: {
+      flexDirection: "row",
+      gap: 10,
+      backgroundColor: colors.card,
+      borderRadius: 10,
+      padding: 12,
+      marginBottom: 8,
+      borderWidth: 1,
+      borderColor: colors.warning,
+    },
     notifRow: {
       flexDirection: "row",
       gap: 10,

@@ -18,7 +18,15 @@ function formatDate(iso: string) {
 type Mode = "timer" | "fravaer";
 type PendingDelete = { id: string; kind: "timer" | "fravaer" };
 
-export default function AnsatteScreen({ userId, profile }: { userId: string; profile: Profile | null }) {
+export default function AnsatteScreen({
+  userId,
+  profile,
+  initialEmployeeId = "",
+}: {
+  userId: string;
+  profile: Profile | null;
+  initialEmployeeId?: string;
+}) {
   const { colors } = useTheme();
   const { t } = useLanguage();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -27,7 +35,7 @@ export default function AnsatteScreen({ userId, profile }: { userId: string; pro
 
   const [employees, setEmployees] = useState<Profile[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
-  const [selectedEmployeeId, setSelectedEmployeeId] = useState("");
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState(initialEmployeeId);
   const [routes, setRoutes] = useState<Route[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [entries, setEntries] = useState<TimeEntry[]>([]);

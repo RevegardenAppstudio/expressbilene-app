@@ -1029,6 +1029,8 @@ create or replace function public.auto_clock_out_stale_punches()
 returns void language plpgsql security definer set search_path = public as $$
 declare
   r record;
+  employee_name text;
+  clock_in_label text;
 begin
   for r in
     select id, user_id, clock_in from public.time_entries
@@ -1037,12 +1039,21 @@ begin
     for update
   loop
     update public.time_entries set clock_out = r.clock_in + interval '24 hours' where id = r.id;
+    select full_name into employee_name from public.profiles where id = r.user_id;
+    clock_in_label := to_char(r.clock_in at time zone 'Europe/Oslo', 'DD.MM.YYYY HH24:MI');
     insert into public.audit_log (actor_id, action, target_type, target_id, details)
     values (
       null, 'time_entry.auto_clocked_out', 'time_entries', r.id,
-      (select full_name from public.profiles where id = r.user_id)
-        || ': automatisk utstemplet etter 24 timer (innstemplet '
-        || to_char(r.clock_in at time zone 'Europe/Oslo', 'DD.MM.YYYY HH24:MI') || ')'
+      employee_name || ': automatisk utstemplet etter 24 timer (innstemplet ' || clock_in_label || ')'
+    );
+    -- created_by = den ansatte, slik at varselet kan lenke til vedkommende
+    -- (og stab med tilgang til den ansatte ser det, se RLS på notifications).
+    insert into public.notifications (type, title, body, related_table, related_id, created_by)
+    values (
+      'auto_utstempling',
+      employee_name || ' stemplet ut automatisk etter 24 timer',
+      'Innstemplet ' || clock_in_label || '. Sjekk og korriger timene.',
+      'time_entries', r.id, r.user_id
     );
   end loop;
 end;
