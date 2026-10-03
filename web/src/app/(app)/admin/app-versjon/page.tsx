@@ -25,8 +25,8 @@ export default function AppVersjonPage() {
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) return;
-    const { data: me } = await supabase.from("profiles").select("role").eq("id", user.id).single();
-    setIsAdmin(me?.role === "admin");
+    const { data: me } = await supabase.from("profiles").select("role, is_employee").eq("id", user.id).single();
+    setIsAdmin(me?.role === "admin" && me?.is_employee === false);
     const { data } = await supabase
       .from("app_releases")
       .select("*")

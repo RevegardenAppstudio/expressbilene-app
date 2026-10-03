@@ -1066,14 +1066,27 @@ select cron.schedule('auto-clock-out-stale-punches', '*/15 * * * *', $$select pu
 -- en offentlig bøtte; app_releases forteller hvilken versjon som er nyest,
 -- slik at appen kan varsle om oppdatering og /last-ned kan lenke til filen.
 -- ============================================================
+-- Utvikler = admin-konto som ikke er en ansatt (is_employee = false). Kun
+-- denne kan publisere nye Android-APK-er (se app_releases over).
+create or replace function public.is_developer()
+returns boolean language sql security definer set search_path = public stable as $$
+  select exists (
+    select 1 from public.profiles
+    where id = (select auth.uid()) and role = 'admin' and is_employee = false
+  );
+$$;
+revoke execute on function public.is_developer() from public, anon;
+grant execute on function public.is_developer() to authenticated;
+
+
 insert into storage.buckets (id, name, public)
 values ('app-releases', 'app-releases', true)
 on conflict (id) do update set public = true;
 
-create policy "Admin kan laste opp app-utgivelser" on storage.objects for insert to authenticated
-  with check (bucket_id = 'app-releases' and public.is_admin());
-create policy "Admin kan slette app-utgivelser" on storage.objects for delete to authenticated
-  using (bucket_id = 'app-releases' and public.is_admin());
+create policy "Utvikler kan laste opp app-utgivelser" on storage.objects for insert to authenticated
+  with check (bucket_id = 'app-releases' and public.is_developer());
+create policy "Utvikler kan slette app-utgivelser" on storage.objects for delete to authenticated
+  using (bucket_id = 'app-releases' and public.is_developer());
 
 create table if not exists public.app_releases (
   id uuid primary key default gen_random_uuid(),
@@ -1090,7 +1103,7 @@ create index if not exists idx_app_releases_created_by on public.app_releases (c
 alter table public.app_releases enable row level security;
 
 create policy "Alle kan lese app-utgivelser" on public.app_releases for select to anon, authenticated using (true);
-create policy "Admin kan publisere app-utgivelser" on public.app_releases for insert to authenticated
-  with check (public.is_admin());
-create policy "Admin kan slette app-utgivelser" on public.app_releases for delete to authenticated
-  using (public.is_admin());
+create policy "Utvikler kan publisere app-utgivelser" on public.app_releases for insert to authenticated
+  with check (public.is_developer());
+create policy "Utvikler kan slette app-utgivelser" on public.app_releases for delete to authenticated
+  using (public.is_developer());

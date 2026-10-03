@@ -21,7 +21,7 @@ export default function NavBar({ profile }: { profile: Profile }) {
     { href: "/hendelser", label: t("nav.hendelser") },
   ];
   const COMMON_LINKS = [{ href: "/sammendrag", label: t("nav.oversikt") }];
-  const ADMIN_LINKS = [{ href: "/admin/app-versjon", label: t("nav.app") }];
+  const DEVELOPER_LINKS = [{ href: "/admin/app-versjon", label: t("nav.publishApp") }];
   const STAFF_LINKS = [
     { href: "/kalender", label: t("nav.kalender") },
     { href: "/admin/avdelinger", label: t("nav.avdelinger") },
@@ -66,7 +66,8 @@ export default function NavBar({ profile }: { profile: Profile }) {
     ...(profile.role === "admin" ? [] : DRIVER_ONLY_LINKS),
     ...COMMON_LINKS,
     ...(isStaff ? STAFF_LINKS : []),
-    ...(profile.role === "admin" ? ADMIN_LINKS : []),
+    { href: "/last-ned", label: t("nav.app") },
+    ...(profile.role === "admin" && !profile.is_employee ? DEVELOPER_LINKS : []),
   ];
 
   return (
