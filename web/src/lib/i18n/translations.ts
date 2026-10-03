@@ -468,6 +468,11 @@ const no = {
     fillAll: "Velg en APK-fil og fyll ut versjonskode og versjonsnavn.",
     mustBeHigher: "Versjonskoden må være høyere enn den nyeste publiserte.",
     none: "Ingen versjoner publisert ennå.",
+    deleteTitle: "Slette versjon {{version}}?",
+    deleteMessage: "Filen fjernes fra nedlastingssiden og kan ikke hentes tilbake. Ansatte som allerede har installert versjonen beholder den.",
+    deleted: "Versjonen er slettet.",
+    deletedFileLeft: "Versjonen er fjernet fra listen, men filen kunne ikke slettes fra lagringen.",
+    deleteFailed: "Kunne ikke slette versjonen.",
     adminOnly: "Denne siden er kun tilgjengelig for utvikler-kontoen.",
   },
   personvern: {
@@ -1017,6 +1022,11 @@ const en: typeof no = {
     fillAll: "Choose an APK file and fill in version code and version name.",
     mustBeHigher: "The version code must be higher than the latest published one.",
     none: "No versions published yet.",
+    deleteTitle: "Delete version {{version}}?",
+    deleteMessage: "The file is removed from the download page and cannot be recovered. Employees who already installed this version keep it.",
+    deleted: "Version deleted.",
+    deletedFileLeft: "The version was removed from the list, but the file could not be deleted from storage.",
+    deleteFailed: "Could not delete the version.",
     adminOnly: "This page is only available to the developer account.",
   },
   personvern: {

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState, FormEvent } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useToast } from "@/components/Toast";
+import ReasonDialog from "@/components/ReasonDialog";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 type Release = { id: string; version_code: number; version_name: string; apk_path: string; notes: string | null; created_at: string };
@@ -18,6 +19,7 @@ export default function AppVersjonPage() {
   const [versionName, setVersionName] = useState("");
   const [notes, setNotes] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<Release | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -83,6 +85,20 @@ export default function AppVersjonPage() {
     setVersionName("");
     setNotes("");
     showToast(t("appVersion.published"));
+    load();
+  }
+
+  async function confirmDelete() {
+    const release = pendingDelete;
+    setPendingDelete(null);
+    if (!release) return;
+    const { error: deleteError } = await supabase.from("app_releases").delete().eq("id", release.id);
+    if (deleteError) {
+      showToast(t("appVersion.deleteFailed"), "error");
+      return;
+    }
+    const { error: removeError } = await supabase.storage.from("app-releases").remove([release.apk_path]);
+    showToast(removeError ? t("appVersion.deletedFileLeft") : t("appVersion.deleted"), removeError ? "error" : "success");
     load();
   }
 
@@ -165,11 +181,27 @@ export default function AppVersjonPage() {
               <span className="font-medium text-slate-800">
                 {r.version_name} <span className="text-xs font-normal text-slate-400">({r.version_code})</span>
               </span>
-              <span className="text-xs text-slate-400">{new Date(r.created_at).toLocaleDateString("nb-NO")}</span>
+              <span className="flex items-center gap-4">
+                <span className="text-xs text-slate-400">{new Date(r.created_at).toLocaleDateString("nb-NO")}</span>
+                <button onClick={() => setPendingDelete(r)} className="text-xs text-slate-400 hover:text-red-600">
+                  {t("common.delete")}
+                </button>
+              </span>
             </div>
           ))
         )}
       </div>
+
+      {pendingDelete && (
+        <ReasonDialog
+          title={t("appVersion.deleteTitle", { version: pendingDelete.version_name })}
+          message={t("appVersion.deleteMessage")}
+          confirmLabel={t("common.delete")}
+          danger
+          onConfirm={confirmDelete}
+          onCancel={() => setPendingDelete(null)}
+        />
+      )}
     </div>
   );
 }
