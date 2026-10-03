@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { LanguageProvider, useLanguage } from "@/lib/i18n/LanguageContext";
@@ -10,6 +10,7 @@ type Release = { version_name: string; version_code: number; apk_path: string; n
 
 function LastNedContent() {
   const { t } = useLanguage();
+  const router = useRouter();
   const [release, setRelease] = useState<Release | null>(null);
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -70,9 +71,13 @@ function LastNedContent() {
           <p className="pt-2 text-xs text-slate-400">{t("lastNed.updatesHint")}</p>
         </div>
 
-        <Link href="/login" className="mt-8 inline-block text-sm font-medium text-brand-dark hover:brightness-90">
-          {t("lastNed.toWeb")}
-        </Link>
+        <button
+          type="button"
+          onClick={() => (window.history.length > 1 ? router.back() : router.push("/"))}
+          className="mt-8 inline-block text-sm font-medium text-brand-dark hover:brightness-90"
+        >
+          {t("lastNed.back")}
+        </button>
       </div>
     </div>
   );

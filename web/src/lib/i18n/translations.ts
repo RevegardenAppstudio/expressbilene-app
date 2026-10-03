@@ -451,7 +451,7 @@ const no = {
     step3: "Hvis Android spør, tillat installasjon fra denne kilden (nettleseren din).",
     step4: "Trykk Installer. Hvis Play Protect advarer, velg Installer likevel.",
     updatesHint: "Når det kommer en ny versjon, vises en melding i appen med lenke til oppdateringen.",
-    toWeb: "Gå til innlogging på web",
+    back: "← Tilbake",
   },
   appVersion: {
     title: "Android-app",
@@ -1005,7 +1005,7 @@ const en: typeof no = {
     step3: "If Android asks, allow installation from this source (your browser).",
     step4: "Tap Install. If Play Protect warns you, choose Install anyway.",
     updatesHint: "When a new version is released, the app shows a message with a link to the update.",
-    toWeb: "Go to web login",
+    back: "← Back",
   },
   appVersion: {
     title: "Android app",
