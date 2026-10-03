@@ -18,6 +18,9 @@
       "extends": "production",
       "android": {
         "buildType": "apk"
+      },
+      "env": {
+        "SIDELOAD": "1"
       }
     }
   },
